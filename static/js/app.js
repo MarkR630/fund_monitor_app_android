@@ -129,53 +129,24 @@ function renderSingleFundReport(r) {
   const changeClass = isUp ? 'color-up' : (isDown ? 'color-down' : 'color-neutral');
   const changeSign = isUp ? '+' : '';
 
-  // 策略一详细数据
-  const s1 = r.s1;
-  let s1Html = '<div style="color: var(--text-muted); font-size: 13px;">历史数据不足，未能完成策略一评估</div>';
-  if (s1) {
-    const s1Trigger = s1.signal ? 'trigger-yes' : 'trigger-no';
-    const s1TriggerText = s1.signal ? '触发！' : '未触发';
-    s1Html = `
-      <div class="strategy-title-row">
-        <span class="strategy-name">[策略一] 近30天大幅波动策略</span>
-        <span class="trigger-tag ${s1Trigger}">${s1TriggerText}</span>
-      </div>
-      <div class="strategy-metric-row">
-        <span>建议操作</span>
-        <span class="strategy-metric-val" style="color:${s1.signal === 'BUY' ? 'var(--up-color)' : (s1.signal === 'SELL' ? 'var(--down-color)' : 'var(--text-main)')};">${s1.action_desc}</span>
-      </div>
-      <div class="strategy-metric-row">
-        <span>近30天最大涨幅</span>
-        <span class="strategy-metric-val">${s1.max_gain > 0 ? '+' : ''}${s1.max_gain}% ${s1.max_gain_date ? `(${s1.max_gain_date})` : ''}</span>
-      </div>
-      <div class="strategy-metric-row">
-        <span>近30天最大跌幅</span>
-        <span class="strategy-metric-val">${s1.max_loss}% ${s1.max_loss_date ? `(${s1.max_loss_date})` : ''}</span>
-      </div>
-      ${s1.top_gain_threshold ? `
-      <div class="strategy-metric-row">
-        <span>90%高位分位阈值</span>
-        <span class="strategy-metric-val">+${s1.top_gain_threshold}%</span>
-      </div>` : ''}
-      ${s1.top_loss_threshold ? `
-      <div class="strategy-metric-row">
-        <span>10%低位分位阈值</span>
-        <span class="strategy-metric-val">${s1.top_loss_threshold}%</span>
-      </div>` : ''}
-    `;
-  }
-
-  // 策略二详细数据
+  // [主策略·定方向] 近90天相对位置标尺
   const s2 = r.s2;
-  let s2Html = '<div style="color: var(--text-muted); font-size: 13px;">历史数据不足，未能完成策略二评估</div>';
+  let s2Html = '<div style="color: var(--text-muted); font-size: 13px;">历史数据不足，未能完成主策略评估</div>';
   if (s2) {
-    const s2Trigger = s2.signal ? 'trigger-yes' : 'trigger-no';
-    const s2TriggerText = s2.signal ? '触发！' : '未触发';
+    let s2Trigger = 'trigger-no';
+    let s2TriggerText = '中位观望区 (滤除单日波动)';
+    if (s2.pos_ratio <= 20.0) {
+      s2Trigger = 'trigger-yes';
+      s2TriggerText = '🟢 进入低位加仓区 (≤20%)';
+    } else if (s2.pos_ratio >= 80.0) {
+      s2Trigger = 'trigger-yes';
+      s2TriggerText = '🔴 进入高位减仓区 (≥80%)';
+    }
     const posRatioClamped = Math.min(100, Math.max(0, s2.pos_ratio));
 
     s2Html = `
       <div class="strategy-title-row">
-        <span class="strategy-name">[策略二] 近90天相对位置策略</span>
+        <span class="strategy-name">🎯 [主策略·定方向] 近90天相对位置标尺</span>
         <span class="trigger-tag ${s2Trigger}">${s2TriggerText}</span>
       </div>
       <div class="strategy-metric-row">
@@ -184,7 +155,7 @@ function renderSingleFundReport(r) {
       </div>
       <div class="strategy-metric-row">
         <span>区间相对位置百分比</span>
-        <span class="strategy-metric-val" style="color: var(--primary); font-size: 15px;">${s2.pos_ratio}%</span>
+        <span class="strategy-metric-val" style="color: var(--primary); font-size: 15px; font-weight: 700;">${s2.pos_ratio}%</span>
       </div>
       <div class="gauge-wrapper">
         <div class="gauge-track">
@@ -211,6 +182,51 @@ function renderSingleFundReport(r) {
     `;
   }
 
+  // [增强因子·定力度] 近30天大幅波动分位数
+  const s1 = r.s1;
+  let s1Html = '<div style="color: var(--text-muted); font-size: 13px;">历史数据不足，未能完成增强策略评估</div>';
+  if (s1) {
+    let s1Trigger = 'trigger-no';
+    let s1TriggerText = '常态波动 (无强化)';
+    if (s1.signal === 'BUY') {
+      s1Trigger = 'trigger-yes';
+      s1TriggerText = '🔥 恐慌超跌 (加仓强化)';
+    } else if (s1.signal === 'SELL') {
+      s1Trigger = 'trigger-yes';
+      s1TriggerText = '🚨 极值超涨 (减仓强化)';
+    }
+    s1Html = `
+      <div class="strategy-title-row">
+        <span class="strategy-name">⚡ [增强因子·定力度] 近30天波动分位数</span>
+        <span class="trigger-tag ${s1Trigger}">${s1TriggerText}</span>
+      </div>
+      <div class="strategy-metric-row">
+        <span>仓位强化效果</span>
+        <span class="strategy-metric-val" style="color:${s1.signal === 'BUY' ? '#ff6b6b' : (s1.signal === 'SELL' ? '#34d399' : 'var(--text-muted)')}; font-weight: 600;">
+          ${s1.signal === 'BUY' ? '低位遇恐慌暴跌 ➔ 加大加仓力度' : (s1.signal === 'SELL' ? '高位遇冲高狂热 ➔ 加大止盈力度' : '正常波动，按主策略基准执行')}
+        </span>
+      </div>
+      <div class="strategy-metric-row">
+        <span>近30天最大涨幅</span>
+        <span class="strategy-metric-val">${s1.max_gain > 0 ? '+' : ''}${s1.max_gain}% ${s1.max_gain_date ? `(${s1.max_gain_date})` : ''}</span>
+      </div>
+      <div class="strategy-metric-row">
+        <span>近30天最大跌幅</span>
+        <span class="strategy-metric-val">${s1.max_loss}% ${s1.max_loss_date ? `(${s1.max_loss_date})` : ''}</span>
+      </div>
+      ${s1.top_gain_threshold ? `
+      <div class="strategy-metric-row">
+        <span>90%超涨分位阈值</span>
+        <span class="strategy-metric-val">+${s1.top_gain_threshold}%</span>
+      </div>` : ''}
+      ${s1.top_loss_threshold ? `
+      <div class="strategy-metric-row">
+        <span>10%超跌分位阈值</span>
+        <span class="strategy-metric-val">${s1.top_loss_threshold}%</span>
+      </div>` : ''}
+    `;
+  }
+
   content.innerHTML = `
     <div class="report-hero">
       <div class="report-fund-title">${escapeHtml(r.fund_name)}</div>
@@ -227,11 +243,11 @@ function renderSingleFundReport(r) {
     </div>
 
     <div class="strategy-box">
-      ${s1Html}
+      ${s2Html}
     </div>
 
     <div class="strategy-box">
-      ${s2Html}
+      ${s1Html}
     </div>
 
     <div style="font-size: 11px; color: var(--text-muted); text-align: right; margin-top: 10px;">
@@ -272,35 +288,32 @@ async function generateVisualPortfolioReport() {
     try {
       const res = await StrategyEngine.diagnoseFund(fund);
       results.push(res);
-      if (res.advice_type === 'BUY') {
+      if (res.advice_type === 'STRONG_BUY' || res.advice_type === 'BUY') {
         buyCount++;
         actionCount++;
-        urgentItems.push({ code: res.fund_code, name: res.fund_name, advice: res.final_advice });
-      } else if (res.advice_type === 'SELL') {
+        urgentItems.push({ code: res.fund_code, name: res.fund_name, advice: res.final_advice, type: res.advice_type });
+      } else if (res.advice_type === 'STRONG_SELL' || res.advice_type === 'SELL') {
         sellCount++;
         actionCount++;
-        urgentItems.push({ code: res.fund_code, name: res.fund_name, advice: res.final_advice });
+        urgentItems.push({ code: res.fund_code, name: res.fund_name, advice: res.final_advice, type: res.advice_type });
       }
     } catch (e) {
       console.error(`计算 ${fund.fund_code} 失败:`, e);
     }
   }
 
-  // 核心排序：优先将需要操作的标的 (BUY 加仓 / SELL 减仓) 排序在最前面
+  // 核心排序：强力加仓(1) > 常规加仓(2) > 强力减仓(3) > 常规减仓(4) > 观望持有(5)
   results.sort((a, b) => {
     const getPriority = (item) => {
-      if (item.advice_type === 'BUY' || item.advice_type === 'SELL') return 1;
-      if (item.advice_type === 'WATCH') return 2;
-      return 3; // 'HOLD'
+      if (item.advice_type === 'STRONG_BUY') return 1;
+      if (item.advice_type === 'BUY') return 2;
+      if (item.advice_type === 'STRONG_SELL') return 3;
+      if (item.advice_type === 'SELL') return 4;
+      return 5; // HOLD
     };
     const priA = getPriority(a);
     const priB = getPriority(b);
     if (priA !== priB) return priA - priB;
-
-    // 同为需操作时，加仓排在减仓前
-    if (priA === 1 && a.advice_type !== b.advice_type) {
-      return a.advice_type === 'BUY' ? -1 : 1;
-    }
 
     // 默认同优先级按预估涨跌幅绝对值降序排列 (波动越大的排在前面)
     return Math.abs(b.current_change || 0) - Math.abs(a.current_change || 0);
@@ -339,20 +352,38 @@ async function generateVisualPortfolioReport() {
     const changeSign = isUp ? '+' : '';
     const posRatioClamped = r.s2 ? Math.min(100, Math.max(0, r.s2.pos_ratio)) : 50;
 
+    let s2Badge = '';
+    if (r.s2) {
+      if (r.s2.pos_ratio <= 20.0) {
+        s2Badge = `<span class="trigger-tag trigger-yes">🎯 低位加仓区 ${r.s2.pos_ratio}%</span>`;
+      } else if (r.s2.pos_ratio >= 80.0) {
+        s2Badge = `<span class="trigger-tag trigger-yes">🎯 高位减仓区 ${r.s2.pos_ratio}%</span>`;
+      } else {
+        s2Badge = `<span class="trigger-tag trigger-no">🎯 中位区 ${r.s2.pos_ratio}%</span>`;
+      }
+    }
+
     let s1Badge = '';
     if (r.s1 && r.s1.signal) {
-      s1Badge = `<span class="trigger-tag trigger-yes">[策略一] ${r.s1.action_desc}</span>`;
+      const s1Txt = r.s1.signal === 'BUY' ? '⚡ 恐慌超跌强化' : '⚡ 极值超涨强化';
+      s1Badge = `<span class="trigger-tag trigger-yes">${s1Txt}</span>`;
     }
 
-    let s2Badge = '';
-    if (r.s2 && r.s2.signal) {
-      s2Badge = `<span class="trigger-tag trigger-yes">[策略二] ${r.s2.action_desc}</span>`;
+    let actionClass = '';
+    let actionTag = '';
+    if (r.advice_type === 'STRONG_BUY') {
+      actionClass = 'visual-fund-action-strong-buy';
+      actionTag = '<span class="action-priority-tag tag-strong-buy">🔥 强力加仓</span>';
+    } else if (r.advice_type === 'BUY') {
+      actionClass = 'visual-fund-action-buy';
+      actionTag = '<span class="action-priority-tag tag-buy">🌱 常规加仓</span>';
+    } else if (r.advice_type === 'STRONG_SELL') {
+      actionClass = 'visual-fund-action-strong-sell';
+      actionTag = '<span class="action-priority-tag tag-strong-sell">🚨 强力减仓</span>';
+    } else if (r.advice_type === 'SELL') {
+      actionClass = 'visual-fund-action-sell';
+      actionTag = '<span class="action-priority-tag tag-sell">🍂 常规减仓</span>';
     }
-
-    const actionClass = r.advice_type === 'BUY' ? 'visual-fund-action-buy' : (r.advice_type === 'SELL' ? 'visual-fund-action-sell' : '');
-    const actionTag = (r.advice_type === 'BUY' || r.advice_type === 'SELL') 
-      ? `<span class="action-priority-tag ${r.advice_type === 'BUY' ? 'trigger-yes' : 'trigger-no'}" style="color:${r.advice_type === 'BUY' ? '#f87171' : '#34d399'};">⚡ 需操作</span>` 
-      : '';
 
     return `
       <div class="visual-fund-item ${actionClass}" onclick="openFundDetailFromReport('${r.fund_code}')" title="点击查看【${escapeHtml(r.fund_name)}】全套详细监控报告">

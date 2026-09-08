@@ -426,15 +426,31 @@ body {
   margin-bottom: 14px;
 }
 
+.advice-STRONG_BUY {
+  background: rgba(239, 68, 68, 0.22);
+  border: 1px solid rgba(239, 68, 68, 0.55);
+  color: #ff6b6b;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.25);
+  font-weight: 700;
+}
+
 .advice-BUY {
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.14);
+  border: 1px solid rgba(239, 68, 68, 0.32);
   color: #f87171;
 }
 
+.advice-STRONG_SELL {
+  background: rgba(16, 185, 129, 0.22);
+  border: 1px solid rgba(16, 185, 129, 0.55);
+  color: #34d399;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.25);
+  font-weight: 700;
+}
+
 .advice-SELL {
-  background: rgba(16, 185, 129, 0.15);
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.14);
+  border: 1px solid rgba(16, 185, 129, 0.32);
   color: #34d399;
 }
 
@@ -636,9 +652,21 @@ body {
 }
 
 /* 需操作高优先级基金醒目标识 */
+.visual-fund-action-strong-buy {
+  border-left: 5px solid #ef4444 !important;
+  background: rgba(239, 68, 68, 0.12) !important;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.2);
+}
+
 .visual-fund-action-buy {
   border-left: 4px solid var(--up-color) !important;
   background: rgba(239, 68, 68, 0.08) !important;
+}
+
+.visual-fund-action-strong-sell {
+  border-left: 5px solid #10b981 !important;
+  background: rgba(16, 185, 129, 0.12) !important;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
 }
 
 .visual-fund-action-sell {
@@ -649,8 +677,32 @@ body {
 .action-priority-tag {
   font-size: 11px;
   font-weight: 700;
-  padding: 1px 6px;
+  padding: 2px 7px;
   border-radius: 4px;
+}
+
+.tag-strong-buy {
+  background: rgba(239, 68, 68, 0.25);
+  color: #ff6b6b;
+  border: 1px solid rgba(239, 68, 68, 0.55);
+}
+
+.tag-buy {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.tag-strong-sell {
+  background: rgba(16, 185, 129, 0.25);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.55);
+}
+
+.tag-sell {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
 .visual-item-header {
