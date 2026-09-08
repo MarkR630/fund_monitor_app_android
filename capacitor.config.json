@@ -1,0 +1,17 @@
+{
+  "appId": "com.fundmonitor.standalone",
+  "appName": "基金智能监控",
+  "webDir": "static",
+  "server": {
+    "androidScheme": "http",
+    "cleartext": true
+  },
+  "android": {
+    "allowMixedContent": true
+  },
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
+}

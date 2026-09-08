@@ -1,0 +1,23 @@
+{
+  "name": "fund_monitor_app_android",
+  "version": "1.0.0",
+  "description": "基金智能策略监控纯手机独立单机版",
+  "main": "index.js",
+  "scripts": {
+    "build": "npx cap sync"
+  },
+  "keywords": [
+    "fund",
+    "finance",
+    "capacitor",
+    "standalone"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@capacitor/android": "^8.5.1",
+    "@capacitor/cli": "^8.5.1",
+    "@capacitor/core": "^8.5.1"
+  }
+}

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>基金智能策略监控</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="logo-area">
+        <div class="logo-icon">基</div>
+        <div>
+          <div class="app-title">基金智能策略监控</div>
+        </div>
+      </div>
+      <div class="user-toolbar">
+        <button class="btn-icon" onclick="openBackupModal()" title="备份与还原">💾</button>
+      </div>
+    </header>
+
+    <!-- Action Toolbar -->
+    <div class="action-bar">
+      <button class="btn-action btn-primary" onclick="openAddFundModal()">
+        <span>➕</span> 添加监控基金
+      </button>
+      <button class="btn-action btn-secondary" onclick="generateVisualPortfolioReport()">
+        <span>📋</span> 一键汇总报告
+      </button>
+    </div>
+
+    <!-- Fund List Header -->
+    <div class="section-header">
+      <div class="section-title">我的监控目录</div>
+      <span id="fundCount" class="fund-count-badge">0 只</span>
+    </div>
+
+    <!-- Fund Cards Container -->
+    <div id="fundList" class="fund-list">
+      <!-- 动态渲染基金列表 -->
+    </div>
+  </div>
+
+  <!-- 单基金即时监控报告弹窗 (抽屉式，包含全套详细量化信息) -->
+  <div id="monitorModal" class="modal-overlay" onclick="handleOverlayClick(event, 'monitorModal')">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <div class="modal-title">单基金即时监控报告</div>
+        <button class="modal-close" onclick="closeModal('monitorModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="monitorContent">
+          <!-- 动态注入单基报告详情 -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 一键汇总报告专属可视化界面 (Core Feature) -->
+  <div id="portfolioVisualModal" class="modal-overlay" onclick="handleOverlayClick(event, 'portfolioVisualModal')">
+    <div class="modal-sheet" style="max-height: 94vh;">
+      <div class="modal-header">
+        <div class="modal-title">全组合智能监控报告</div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button class="btn-card-mini" style="background: var(--primary); color:#fff; border:none;" onclick="copyPortfolioTextReport()">
+            📋 一键复制文本
+          </button>
+          <button class="modal-close" onclick="closeModal('portfolioVisualModal')">✕</button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <!-- 顶部汇总统计仪表盘 -->
+        <div class="report-summary-stats">
+          <div class="stat-card">
+            <div class="stat-label">监控总数</div>
+            <div id="statTotal" class="stat-value">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">需操作警报</div>
+            <div id="statAction" class="stat-value" style="color: #f87171;">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">建议加仓</div>
+            <div id="statBuy" class="stat-value" style="color: var(--up-color);">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">建议减仓</div>
+            <div id="statSell" class="stat-value" style="color: var(--down-color);">0</div>
+          </div>
+        </div>
+
+        <!-- 需重点操作基金优先警示区 (点击可直达详细信息) -->
+        <div id="urgentAlertSection" class="urgent-alert-box" style="display: none;">
+          <div class="urgent-title">⚠️ 需重点操作基金 (点击查看详细报告)</div>
+          <div id="urgentAlertList" class="urgent-list"></div>
+        </div>
+
+        <!-- 全部基金可视化卡片列表 (按“需操作优先”智能排序，点击每个基金均可查看详细信息) -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin: 12px 0 8px 2px;">
+          <span style="font-size: 13px; font-weight: 600; color: var(--text-secondary);">全部基金双策略透视 (需操作优先)</span>
+          <span style="font-size: 11px; color: var(--text-muted);">👉 点击任意基金查看详细报告</span>
+        </div>
+        <div id="portfolioVisualList">
+          <!-- 动态注入每只基金的可视化卡片 -->
+        </div>
+
+        <!-- 可折叠纯文本格式区 -->
+        <div style="margin-top: 14px;">
+          <div onclick="togglePlainTextSection()" style="font-size: 12px; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: space-between; padding: 6px 0;">
+            <span>📄 查看经典纯文本格式 (点击展开/收起)</span>
+            <span id="plainTextToggleArrow">▼</span>
+          </div>
+          <pre id="portfolioPlainText" class="report-text-pre" style="display: none; margin-top: 6px;"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 添加/编辑基金弹窗 -->
+  <div id="fundModal" class="modal-overlay" onclick="handleOverlayClick(event, 'fundModal')">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <div id="fundModalTitle" class="modal-title">添加监控基金</div>
+        <button class="modal-close" onclick="closeModal('fundModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="fundForm" onsubmit="handleFundSubmit(event)">
+          <input type="hidden" id="editFundId" value="">
+          <div class="form-group">
+            <label class="form-label" for="inputFundCode">场外基金代码 <span style="color: var(--up-color);">*</span></label>
+            <div class="form-input-row">
+              <input type="text" id="inputFundCode" class="form-input" placeholder="如 020096" required maxlength="10">
+              <button type="button" class="btn-lookup" onclick="lookupFundName()">查询名称</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="inputFundName">基金名称 <span style="color: var(--up-color);">*</span></label>
+            <input type="text" id="inputFundName" class="form-input" placeholder="点击查询名称自动补全或手动输入" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="inputEtfCode">
+              联接场内ETF代码 <span style="color: var(--text-muted); font-weight: normal;">(选填)</span>
+            </label>
+            <input type="text" id="inputEtfCode" class="form-input" placeholder="如 sh561170 或 561170，有对应ETF估算更快">
+          </div>
+          <button type="submit" id="btnFundSubmit" class="btn-submit">保 存</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- 数据备份与还原弹窗 -->
+  <div id="backupModal" class="modal-overlay" onclick="handleOverlayClick(event, 'backupModal')">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <div class="modal-title">💾 数据备份与还原</div>
+        <button class="modal-close" onclick="closeModal('backupModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.5;">
+          本应用所有数据均存储在您手机本地。建议定期导出备份，更换设备时可一键导入恢复。
+        </div>
+        <div style="display: flex; gap: 8px; margin-bottom: 14px;">
+          <button type="button" class="btn-action btn-primary" onclick="exportBackupData()">
+            📋 复制备份到剪贴板
+          </button>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="backupInput">从备份文本还原：</label>
+          <textarea id="backupInput" class="form-input" style="height: 100px; resize: none; font-family: monospace; font-size: 11px;" placeholder="在此处粘贴之前导出的 JSON 备份数据..."></textarea>
+        </div>
+        <button type="button" class="btn-action btn-secondary" style="width: 100%;" onclick="importBackupData()">
+          📥 执行还原导入
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast 提示框 -->
+  <div id="toastBox" class="toast-box"></div>
+
+  <!-- 脚本模块按依赖加载 -->
+  <script src="js/storage.js"></script>
+  <script src="js/market.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
