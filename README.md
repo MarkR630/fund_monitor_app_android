@@ -22,6 +22,16 @@
 
 ---
 
+## 📱 App 实机演示截图
+
+| 监控主页与持仓目录 | 全组合可视化汇总体检 |
+| :---: | :---: |
+| <img src="docs/screenshots/01_main_list.jpg" width="300" alt="监控主页" /> | <img src="docs/screenshots/02_summary_report.jpg" width="300" alt="汇总报告" /> |
+| **单基金深度量化评估** | **极简添加与代码智能联想** |
+| <img src="docs/screenshots/03_single_fund_report.jpg" width="300" alt="单基深度评估" /> | <img src="docs/screenshots/04_add_fund.jpg" width="300" alt="添加监控基金" /> |
+
+---
+
 ## 🚀 核心功能特性
 
 ### 1. 📱 真正的零服务器架构 (Zero-Server)
