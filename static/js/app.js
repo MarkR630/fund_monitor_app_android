@@ -4,10 +4,18 @@
 let cachedFunds = [];
 let lastGeneratedPortfolioText = '';
 let lastPortfolioResults = [];
+let openModalStack = [];
 
 function openModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) {
+    if (!openModalStack.includes(modalId)) {
+      openModalStack.push(modalId);
+    }
+    // 动态分层 z-index: 后打开的弹窗永远显示在先打开的弹窗最顶层！
+    const baseZ = 1000;
+    const currentZ = baseZ + openModalStack.length * 50;
+    modal.style.zIndex = currentZ;
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
   }
@@ -17,7 +25,11 @@ function closeModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) {
     modal.classList.remove('active');
-    document.body.style.overflow = '';
+    modal.style.zIndex = '';
+    openModalStack = openModalStack.filter(id => id !== modalId);
+    if (openModalStack.length === 0) {
+      document.body.style.overflow = '';
+    }
   }
 }
 
@@ -125,6 +137,8 @@ async function handleSingleMonitor(fundId) {
   try {
     const report = await StrategyEngine.diagnoseFund(fund);
     renderSingleFundReport(report);
+    const titleElem = document.getElementById('monitorModalTitle');
+    if (titleElem) titleElem.textContent = '单基金即时监控报告';
     openModal('monitorModal');
   } catch (e) {
     showToast('体检异常: ' + (e.message || '网络连接失败'));
@@ -147,6 +161,8 @@ function openFundDetailFromReport(fundCode) {
     return;
   }
   renderSingleFundReport(item);
+  const titleElem = document.getElementById('monitorModalTitle');
+  if (titleElem) titleElem.textContent = '‹ 返回汇总 · 基金深度透视';
   openModal('monitorModal');
 }
 
@@ -594,20 +610,20 @@ function fallbackCopy(text) {
 async function lookupFundName() {
   const code = document.getElementById('inputFundCode').value.trim();
   if (!code || code.length < 4) {
-    showToast('请先输入至少4位基金代码');
+    showToast('请先输入正确的6位公募基金代码');
     return;
   }
-  showToast('正在在线查询基金名称...');
+  showToast('正在官方数据源核实基金名称...');
   try {
     const name = await MarketService.lookupFundNameOnline(code);
     if (name) {
       document.getElementById('inputFundName').value = name;
-      showToast(`已成功匹配: ${name}`);
+      showToast(`✅ 已成功核实: ${name}`);
     } else {
-      showToast('未能自动查到名称，请手动输入');
+      showToast(`❌ 未查到基金 [${code}]，请核对代码是否正确`);
     }
   } catch (e) {
-    showToast('查询失败，请手动输入');
+    showToast('查询网络超时，请手动核对输入');
   }
 }
 
@@ -669,6 +685,16 @@ function handleFundSubmit(event) {
   const fund_code = document.getElementById('inputFundCode').value.trim();
   const fund_name = document.getElementById('inputFundName').value.trim();
   const etf_code = document.getElementById('inputEtfCode').value.trim();
+
+  // 基础校验：公募基金代码应为6位数字
+  if (!/^\d{6}$/.test(fund_code)) {
+    showToast('公募基金代码应为6位数字，如 020096');
+    return;
+  }
+  if (!fund_name) {
+    showToast('请填写基金名称或点击“查询名称”自动补全');
+    return;
+  }
 
   const checkedMode = document.querySelector('input[name="strategyMode"]:checked');
   const strategy_mode = checkedMode ? checkedMode.value : 'auto';

@@ -239,6 +239,10 @@ const StrategyEngine = {
     const fundName = detail.fundName || fundItem.fund_name;
     const history = detail.history || [];
 
+    if ((!history || history.length === 0) && !detail.fundName) {
+      throw new Error(`未查到基金 [${fundItem.fund_code}] 的历史行情，该基金代码可能不存在或已退市`);
+    }
+
     const latestPoint = history.length > 0 ? history[history.length - 1] : null;
     const currentNav = latestPoint ? parseFloat(latestPoint.y) : 1.0;
 

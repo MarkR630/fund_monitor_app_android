@@ -352,6 +352,18 @@ body {
   display: flex;
 }
 
+#portfolioVisualModal {
+  z-index: 1050;
+}
+
+#monitorModal {
+  z-index: 1200; /* 确保单基详情始终浮在一键汇总报告的最上层 */
+}
+
+#fundModal, #backupModal, #settingsModal {
+  z-index: 1300;
+}
+
 .modal-sheet {
   background: #ffffff;
   border: 1px solid #e2e8f0;
@@ -386,12 +398,24 @@ body {
 }
 
 .modal-close {
-  background: none;
+  background: #f1f5f9;
   border: none;
-  color: #94a3b8;
-  font-size: 18px;
+  color: #64748b;
+  font-size: 15px;
+  font-weight: 700;
   cursor: pointer;
-  padding: 4px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.modal-close:active {
+  background: #e2e8f0;
+  transform: scale(0.92);
 }
 
 .modal-body {

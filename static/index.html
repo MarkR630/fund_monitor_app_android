@@ -57,8 +57,8 @@
   <div id="monitorModal" class="modal-overlay" onclick="handleOverlayClick(event, 'monitorModal')">
     <div class="modal-sheet">
       <div class="modal-header">
-        <div class="modal-title">单基金即时监控报告</div>
-        <button class="modal-close" onclick="closeModal('monitorModal')">✕</button>
+        <div class="modal-title" id="monitorModalTitle" onclick="closeModal('monitorModal')" style="cursor: pointer;">单基金即时监控报告</div>
+        <button class="modal-close" onclick="closeModal('monitorModal')" title="关闭并返回">✕</button>
       </div>
       <div class="modal-body">
         <div id="monitorContent">

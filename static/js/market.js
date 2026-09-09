@@ -58,22 +58,37 @@ const MarketService = {
   async lookupFundNameOnline(fundCode) {
     const code = String(fundCode).trim();
     if (!code || code.length < 4) return null;
-    const url = `https://fundsuggest.eastmoney.com/FundSearch/api/FundSearchAPI.ashx?m=1&key=${code}`;
+
+    // 1. 优先通过天天基金官方搜索接口精确匹配 (必须代码严格完全相等，且类别属于公募基金)
+    const suggestUrl = `https://fundsuggest.eastmoney.com/FundSearch/api/FundSearchAPI.ashx?m=1&key=${code}`;
     try {
-      const text = await this.httpGet(url);
+      const text = await this.httpGet(suggestUrl);
       const json = JSON.parse(text);
       const datas = json.Datas || [];
       for (const item of datas) {
-        if (item.CODE === code && item.CATEGORYDESC === '基金') {
+        // 严格精确匹配：代码必须完全一致，且必须是公募基金 (CATEGORY 700 或 CATEGORYDESC '基金')
+        // 绝不使用模糊搜索回退，彻底杜绝输入不存在代码时匹配出无关债券或股票
+        if (String(item.CODE).trim() === code && (item.CATEGORYDESC === '基金' || item.CATEGORY === 700)) {
           return item.NAME;
         }
       }
-      if (datas.length > 0 && datas[0].NAME) {
-        return datas[0].NAME;
+    } catch (e) {
+      console.warn('FundSearchAPI 查询失败:', e);
+    }
+
+    // 2. 双重兜底：若搜索提示未收录，直连天天基金官方品种数据源 pingzhongdata 验证真实性
+    const pingzhongUrl = `https://fund.eastmoney.com/pingzhongdata/${code}.js`;
+    try {
+      const raw = await this.httpGet(pingzhongUrl);
+      const nameMatch = raw.match(/var\s+fS_name\s*=\s*"([^"]+)";/);
+      if (nameMatch && nameMatch[1] && nameMatch[1].trim()) {
+        return nameMatch[1].trim();
       }
     } catch (e) {
-      console.warn('查询基金名称失败:', e);
+      console.warn('pingzhongdata 校验失败:', e);
     }
+
+    // 两层官方权威接口均未查到精确代码匹配的公募基金，则判定该基金代码不存在
     return null;
   },
 
