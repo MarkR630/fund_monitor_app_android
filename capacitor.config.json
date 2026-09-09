@@ -1,6 +1,6 @@
 {
   "appId": "com.fundmonitor.standalone",
-  "appName": "基金智能监控",
+  "appName": "点基",
   "webDir": "static",
   "server": {
     "androidScheme": "http",

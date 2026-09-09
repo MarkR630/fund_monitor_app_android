@@ -343,7 +343,7 @@ const StrategyEngine = {
     const lines = [];
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    lines.push(`【基金智能策略提醒】监控报告 (生成时间: ${timeStr})`);
+    lines.push(`【点基】智能策略监控报告 (生成时间: ${timeStr})`);
     lines.push(`策略法则：位置定方向 · 波动定力度 | 基准买 1 份，暴跌共振买多份\n`);
 
     const strongBuyFunds = [];
