@@ -197,8 +197,8 @@ body {
 .fund-card-top {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  gap: 10px;
+  align-items: flex-start;
+  gap: 12px;
 }
 
 .fund-card-main-col {
@@ -210,27 +210,33 @@ body {
   font-size: 15px;
   font-weight: 600;
   color: var(--text-main);
-  line-height: 1.3;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.4;
+  word-break: break-all;
 }
 
-.fund-card-fixed-meta {
-  display: grid;
-  grid-template-columns: 80px 130px 1fr;
+.fund-card-actions {
+  display: flex;
   gap: 6px;
   align-items: center;
-  margin-top: 5px;
-  font-size: 11px;
+  flex-shrink: 0;
+}
+
+/* 底部元数据栏：独立占满整行，绝不与右侧按钮争抢空间 */
+.fund-card-subline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  font-size: 12px;
 }
 
 .meta-item {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 4px;
-  overflow: hidden;
-  white-space: nowrap;
 }
 
 .meta-label {
@@ -242,8 +248,6 @@ body {
 .meta-val {
   color: var(--text-main);
   font-size: 11px;
-  overflow: hidden;
-  text-overflow: ellipsis;
   font-variant-numeric: tabular-nums;
 }
 
@@ -692,51 +696,70 @@ body {
 }
 
 .urgent-list {
-  font-size: 12px;
-  color: #fca5a5;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.urgent-item-row {
-  display: grid;
-  grid-template-columns: 145px 1fr auto;
+/* 重点操作基金条目：两行式清晰卡片，名称与建议均100%全显，绝不省略成... */
+.urgent-item-card {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.urgent-item-card:active {
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.urgent-item-header {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
   gap: 8px;
-  padding: 5px 0;
-  border-bottom: 1px dashed rgba(248, 113, 113, 0.2);
-  cursor: pointer;
+  margin-bottom: 4px;
 }
 
-.urgent-item-row:last-child {
-  border-bottom: none;
-}
-
-.urgent-item-target {
+.urgent-item-title {
   display: flex;
   align-items: center;
-  gap: 4px;
-  overflow: hidden;
-  white-space: nowrap;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  line-height: 1.3;
+  word-break: break-all;
 }
 
-.urgent-bullet { color: #f87171; font-weight: bold; }
-.urgent-code { font-family: monospace; font-weight: 700; color: #fff; font-variant-numeric: tabular-nums; font-size: 11px; }
-.urgent-name { overflow: hidden; text-overflow: ellipsis; color: #fecaca; font-weight: 500; }
-
-.urgent-item-advice {
-  color: #fca5a5;
-  font-weight: 500;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.urgent-code-badge {
+  font-family: Consolas, Monaco, monospace;
   font-size: 11px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: #fca5a5;
+  font-weight: normal;
+  flex-shrink: 0;
 }
 
 .urgent-item-link {
   font-size: 11px;
-  text-decoration: underline;
   color: #fca5a5;
+  text-decoration: underline;
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+.urgent-item-body {
+  font-size: 12px;
+  color: #fecaca;
+  line-height: 1.4;
+  padding-left: 12px;
+  border-left: 2px solid #f87171;
+  margin-top: 4px;
 }
 
 /* 可视化基金卡片 (支持点击查看详细体检报告) */
@@ -989,62 +1012,75 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Visual Fund Card Fixed Grid Columns */
+/* Visual Fund Card Mobile-Perfect Layout */
 .card-grid-top {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   margin-bottom: 6px;
 }
 
 .card-grid-title-area {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  flex-direction: column;
+  gap: 4px;
   min-width: 0;
   flex: 1;
+}
+
+.card-grid-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 .card-grid-name {
   font-size: 14px;
   font-weight: 600;
   color: var(--text-main);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.4;
+  word-break: break-all;
 }
 
 .card-grid-badge {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   flex-shrink: 0;
-  min-width: 75px;
   text-align: right;
   font-variant-numeric: tabular-nums;
+  padding-top: 2px;
 }
 
+/* 固定元数据信息流：自动换行，字段整齐，绝不溢出 */
 .card-fixed-meta-bar {
-  display: grid;
-  grid-template-columns: 80px 80px 85px 1fr;
+  display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 0;
+  gap: 8px 12px;
+  flex-wrap: wrap;
+  padding: 4px 0 6px 0;
   font-size: 11px;
   color: var(--text-muted);
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
   margin-bottom: 6px;
 }
 
-.card-strategy-status-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+.meta-col {
+  display: inline-flex;
   align-items: center;
+  gap: 4px;
+}
+
+/* 策略状态列表：上下双行整齐对齐，绝不水平溢出屏幕！ */
+.card-strategy-status-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   margin: 6px 0;
 }
 
-.strat-stat-col {
+.strat-stat-row {
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--border-color);
   border-radius: 6px;
@@ -1053,16 +1089,17 @@ body {
   justify-content: space-between;
   align-items: center;
   font-size: 11px;
+  gap: 6px;
 }
 
 .strat-stat-label {
   color: var(--text-muted);
-  font-size: 10px;
-  white-space: nowrap;
+  font-size: 11px;
+  flex-shrink: 0;
 }
 
 .strat-stat-val {
   font-weight: 600;
-  white-space: nowrap;
   font-variant-numeric: tabular-nums;
+  text-align: right;
 }

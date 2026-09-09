@@ -65,30 +65,19 @@ function loadFunds() {
   container.innerHTML = cachedFunds.map(fund => {
     let modeTag = '';
     if (fund.strategy_mode === 'custom') {
-      modeTag = `<span class="badge-profile badge-profile-custom" style="padding: 1px 5px;">⚙️ 自定义 (${fund.custom_days || 90}d/${fund.custom_threshold || 20}%/${fund.custom_multiplier || 4}x)</span>`;
+      modeTag = `<span class="badge-profile badge-profile-custom">⚙️ 自定义 (${fund.custom_days || 90}d / ${fund.custom_threshold || 20}% / ${fund.custom_multiplier || 4}倍)</span>`;
     } else {
-      modeTag = `<span class="badge-profile badge-profile-mid" style="padding: 1px 5px;">🤖 自适应</span>`;
+      modeTag = `<span class="badge-profile badge-profile-mid">🤖 波动率自适应</span>`;
     }
+
+    const etfBadge = fund.etf_code ? `<span class="etf-tag">联接 ${fund.etf_code}</span>` : '';
 
     return `
       <div class="fund-card" id="card-${fund.id}">
+        <!-- 上行：基金全名在左（自然换行全显），操作按钮居右（绝不重叠） -->
         <div class="fund-card-top">
           <div class="fund-card-main-col">
-            <div class="fund-card-title" title="${escapeHtml(fund.fund_name)}">${escapeHtml(fund.fund_name)}</div>
-            <div class="fund-card-fixed-meta">
-              <div class="meta-item">
-                <span class="meta-label">代码:</span>
-                <span class="meta-val font-mono">${fund.fund_code}</span>
-              </div>
-              <div class="meta-item">
-                <span class="meta-label">策略:</span>
-                ${modeTag}
-              </div>
-              <div class="meta-item">
-                <span class="meta-label">联接:</span>
-                <span class="meta-val font-mono">${fund.etf_code || '--'}</span>
-              </div>
-            </div>
+            <div class="fund-card-title">${escapeHtml(fund.fund_name)}</div>
           </div>
           <div class="fund-card-actions">
             <button class="btn-card-mini btn-card-monitor" id="btn-monitor-${fund.id}" onclick="handleSingleMonitor('${fund.id}')">
@@ -101,6 +90,22 @@ function loadFunds() {
               🗑️
             </button>
           </div>
+        </div>
+
+        <!-- 下行：元数据独立全宽展示，代码、策略模式与联接代码清晰完整 -->
+        <div class="fund-card-subline">
+          <div class="meta-item">
+            <span class="meta-label">代码:</span>
+            <span class="meta-val font-mono" style="font-weight: 600;">${fund.fund_code}</span>
+          </div>
+          <div class="meta-item">
+            ${modeTag}
+          </div>
+          ${etfBadge ? `
+          <div class="meta-item">
+            ${etfBadge}
+          </div>
+          ` : ''}
         </div>
       </div>
     `;
@@ -376,14 +381,18 @@ async function generateVisualPortfolioReport() {
   if (urgentItems.length > 0) {
     alertBox.style.display = 'block';
     alertList.innerHTML = urgentItems.map(item => `
-      <div class="urgent-item-row" onclick="openFundDetailFromReport('${item.code}')" title="点击查看【${escapeHtml(item.name)}】详细报告">
-        <div class="urgent-item-target">
-          <span class="urgent-bullet">•</span>
-          <span class="urgent-code">${item.code}</span>
-          <span class="urgent-name">${escapeHtml(item.name)}</span>
+      <div class="urgent-item-card" onclick="openFundDetailFromReport('${item.code}')" title="点击查看【${escapeHtml(item.name)}】详细监控报告">
+        <div class="urgent-item-header">
+          <div class="urgent-item-title">
+            <span style="color: #f87171;">⚡</span>
+            <span>${escapeHtml(item.name)}</span>
+            <span class="urgent-code-badge">${item.code}</span>
+          </div>
+          <span class="urgent-item-link">查看详情 ›</span>
         </div>
-        <div class="urgent-item-advice">${escapeHtml(item.advice)}</div>
-        <div class="urgent-item-link">查看详情 ›</div>
+        <div class="urgent-item-body">
+          ${escapeHtml(item.advice)}
+        </div>
       </div>
     `).join('');
   } else {
@@ -463,18 +472,18 @@ async function generateVisualPortfolioReport() {
 
     return `
       <div class="visual-fund-item ${actionClass}" onclick="openFundDetailFromReport('${r.fund_code}')" title="点击查看【${escapeHtml(r.fund_name)}】全套详细监控报告">
-        <!-- 顶栏：操作标签与名称居左，涨跌幅居右（固定对齐） -->
+        <!-- 顶栏：操作标签 + 基金名称全名（自然换行全显），涨跌幅居右 -->
         <div class="card-grid-top">
           <div class="card-grid-title-area">
-            ${actionTag}
-            <span class="card-grid-name">${escapeHtml(r.fund_name)}</span>
+            ${actionTag ? `<div style="margin-bottom: 3px;">${actionTag}</div>` : ''}
+            <div class="card-grid-name">${escapeHtml(r.fund_name)}</div>
           </div>
           <div class="card-grid-badge ${changeClass}">
             ${changeSign}${change.toFixed(2)}%
           </div>
         </div>
 
-        <!-- 固定字段网格元数据栏 (代码、画像、基准、联接各占固定列宽，彻底整齐对齐) -->
+        <!-- 元数据流：代码、画像、基准、联接代码完整呈现 -->
         <div class="card-fixed-meta-bar">
           <div class="meta-col">
             <span class="meta-label">代码:</span>
@@ -486,28 +495,30 @@ async function generateVisualPortfolioReport() {
           </div>
           <div class="meta-col">
             <span class="meta-label">基准:</span>
-            <span class="meta-val font-mono">¥${cfg.baseAmount}</span>
+            <span class="meta-val font-mono">¥${cfg.baseAmount}/份</span>
           </div>
+          ${r.etf_code ? `
           <div class="meta-col">
             <span class="meta-label">联接:</span>
-            <span class="meta-val font-mono">${r.etf_code || '--'}</span>
+            <span class="meta-val font-mono">${r.etf_code}</span>
           </div>
+          ` : ''}
         </div>
 
-        <!-- 策略状态双列固定对齐 -->
-        <div class="card-strategy-status-grid">
-          <div class="strat-stat-col">
-            <span class="strat-stat-label">🎯 主策略·位置</span>
+        <!-- 策略状态上下列表：主策略与辅因子分行整齐对齐，绝不溢出屏幕！ -->
+        <div class="card-strategy-status-list">
+          <div class="strat-stat-row">
+            <span class="strat-stat-label">🎯 [主策略] 近${cfg.days}天位置标尺</span>
             <span class="strat-stat-val" style="color: ${s2ColColor};">${s2ColText}</span>
           </div>
-          <div class="strat-stat-col">
-            <span class="strat-stat-label">⚡ 辅因子·波动</span>
+          <div class="strat-stat-row">
+            <span class="strat-stat-label">⚡ [辅因子] 近30天波动分位数</span>
             <span class="strat-stat-val" style="color: ${s1ColColor};">${s1ColText}</span>
           </div>
         </div>
 
-        <!-- 综合决策整齐横幅 -->
-        <div class="report-advice-banner advice-${r.advice_type}" style="padding: 6px 10px; font-size: 11px; margin: 4px 0 6px 0;">
+        <!-- 综合决策整齐横幅（全宽自适应，完整展示买卖建议与金额） -->
+        <div class="report-advice-banner advice-${r.advice_type}" style="padding: 7px 10px; font-size: 12px; margin: 6px 0; line-height: 1.4;">
           ${r.final_advice}
         </div>
 
@@ -531,7 +542,7 @@ async function generateVisualPortfolioReport() {
         ` : ''}
 
         <div class="visual-card-hint">
-          <span>📊 历史波动: ${cfg.volatility}% (周期${cfg.days}d / 阈值${cfg.threshold}%)</span>
+          <span>📊 年化波动: ${cfg.volatility}% (周期${cfg.days}d / 阈值${cfg.threshold}%)</span>
           <span style="color: var(--primary); font-weight: 600;">详细报告 ›</span>
         </div>
       </div>
