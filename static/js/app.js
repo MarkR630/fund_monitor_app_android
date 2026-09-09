@@ -65,20 +65,29 @@ function loadFunds() {
   container.innerHTML = cachedFunds.map(fund => {
     let modeTag = '';
     if (fund.strategy_mode === 'custom') {
-      modeTag = `<span class="badge-profile badge-profile-custom">⚙️ 自定义 (${fund.custom_days || 90}d/${fund.custom_threshold || 20}%/${fund.custom_multiplier || 4}x)</span>`;
+      modeTag = `<span class="badge-profile badge-profile-custom" style="padding: 1px 5px;">⚙️ 自定义 (${fund.custom_days || 90}d/${fund.custom_threshold || 20}%/${fund.custom_multiplier || 4}x)</span>`;
     } else {
-      modeTag = `<span class="badge-profile badge-profile-mid">🤖 波动率自适应</span>`;
+      modeTag = `<span class="badge-profile badge-profile-mid" style="padding: 1px 5px;">🤖 自适应</span>`;
     }
 
     return `
       <div class="fund-card" id="card-${fund.id}">
         <div class="fund-card-top">
-          <div>
-            <div class="fund-card-title">${escapeHtml(fund.fund_name)}</div>
-            <div class="fund-card-code" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 4px;">
-              <span style="font-weight: 600;">${fund.fund_code}</span>
-              ${fund.etf_code ? `<span class="etf-tag">联接 ${fund.etf_code}</span>` : ''}
-              ${modeTag}
+          <div class="fund-card-main-col">
+            <div class="fund-card-title" title="${escapeHtml(fund.fund_name)}">${escapeHtml(fund.fund_name)}</div>
+            <div class="fund-card-fixed-meta">
+              <div class="meta-item">
+                <span class="meta-label">代码:</span>
+                <span class="meta-val font-mono">${fund.fund_code}</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">策略:</span>
+                ${modeTag}
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">联接:</span>
+                <span class="meta-val font-mono">${fund.etf_code || '--'}</span>
+              </div>
             </div>
           </div>
           <div class="fund-card-actions">
@@ -367,9 +376,14 @@ async function generateVisualPortfolioReport() {
   if (urgentItems.length > 0) {
     alertBox.style.display = 'block';
     alertList.innerHTML = urgentItems.map(item => `
-      <div style="cursor: pointer; padding: 4px 0; display: flex; justify-content: space-between; align-items: center;" onclick="openFundDetailFromReport('${item.code}')">
-        <span>• <b>${escapeHtml(item.name)}</b> (${item.code})：${escapeHtml(item.advice)}</span>
-        <span style="font-size: 11px; text-decoration: underline; color: #fca5a5; flex-shrink: 0; margin-left: 8px;">查看详情 ›</span>
+      <div class="urgent-item-row" onclick="openFundDetailFromReport('${item.code}')" title="点击查看【${escapeHtml(item.name)}】详细报告">
+        <div class="urgent-item-target">
+          <span class="urgent-bullet">•</span>
+          <span class="urgent-code">${item.code}</span>
+          <span class="urgent-name">${escapeHtml(item.name)}</span>
+        </div>
+        <div class="urgent-item-advice">${escapeHtml(item.advice)}</div>
+        <div class="urgent-item-link">查看详情 ›</div>
       </div>
     `).join('');
   } else {
@@ -421,36 +435,85 @@ async function generateVisualPortfolioReport() {
       actionTag = `<span class="action-priority-tag tag-sell">🍂 常规减仓 1 份 (¥${r.suggested_amount})</span>`;
     }
 
+    let s2ColText = '中位正常区';
+    let s2ColColor = 'var(--text-muted)';
+    if (r.s2) {
+      if (r.s2.pos_ratio <= r.s2.low_bound) {
+        s2ColText = `🟢 低位 ${r.s2.pos_ratio}% (≤${r.s2.low_bound}%)`;
+        s2ColColor = '#f87171';
+      } else if (r.s2.pos_ratio >= r.s2.high_bound) {
+        s2ColText = `🔴 高位 ${r.s2.pos_ratio}% (≥${r.s2.high_bound}%)`;
+        s2ColColor = '#34d399';
+      } else {
+        s2ColText = `⚪ 中位 ${r.s2.pos_ratio}%`;
+      }
+    }
+
+    let s1ColText = '常态波动 (基准)';
+    let s1ColColor = 'var(--text-muted)';
+    if (r.s1 && r.s1.signal) {
+      if (r.s1.signal === 'BUY') {
+        s1ColText = `🔥 恐慌超跌 (加码${cfg.multiplier}倍)`;
+        s1ColColor = '#ff6b6b';
+      } else if (r.s1.signal === 'SELL') {
+        s1ColText = `🚨 极值超涨 (加码${cfg.multiplier}倍)`;
+        s1ColColor = '#34d399';
+      }
+    }
+
     return `
       <div class="visual-fund-item ${actionClass}" onclick="openFundDetailFromReport('${r.fund_code}')" title="点击查看【${escapeHtml(r.fund_name)}】全套详细监控报告">
-        <div class="visual-item-header">
-          <div>
-            <div class="visual-item-name">
-              ${actionTag}
-              <span>${escapeHtml(r.fund_name)}</span>
-              <span class="detail-link-tag">详细报告 ›</span>
-            </div>
-            <div class="visual-item-code">
-              代码: ${r.fund_code} ${r.etf_code ? `| 联接: ${r.etf_code}` : ''} |
-              <span class="badge-profile ${profileBadgeClass}" style="font-size: 10px; padding: 1px 5px;">${cfg.profileBadge}</span>
-              | 基准 ¥${cfg.baseAmount}
-            </div>
+        <!-- 顶栏：操作标签与名称居左，涨跌幅居右（固定对齐） -->
+        <div class="card-grid-top">
+          <div class="card-grid-title-area">
+            ${actionTag}
+            <span class="card-grid-name">${escapeHtml(r.fund_name)}</span>
           </div>
-          <div class="visual-item-badge ${changeClass}">
+          <div class="card-grid-badge ${changeClass}">
             ${changeSign}${change.toFixed(2)}%
           </div>
         </div>
 
-        <div style="display: flex; gap: 6px; margin: 6px 0; flex-wrap: wrap;">
-          ${s2Badge}
-          ${s1Badge}
-          <span class="report-advice-banner advice-${r.advice_type}" style="padding: 2px 8px; font-size: 11px; margin: 0;">
-            ${r.final_advice}
-          </span>
+        <!-- 固定字段网格元数据栏 (代码、画像、基准、联接各占固定列宽，彻底整齐对齐) -->
+        <div class="card-fixed-meta-bar">
+          <div class="meta-col">
+            <span class="meta-label">代码:</span>
+            <span class="meta-val font-mono">${r.fund_code}</span>
+          </div>
+          <div class="meta-col">
+            <span class="meta-label">画像:</span>
+            <span class="badge-profile ${profileBadgeClass}" style="font-size: 10px; padding: 1px 5px;">${cfg.profileBadge}</span>
+          </div>
+          <div class="meta-col">
+            <span class="meta-label">基准:</span>
+            <span class="meta-val font-mono">¥${cfg.baseAmount}</span>
+          </div>
+          <div class="meta-col">
+            <span class="meta-label">联接:</span>
+            <span class="meta-val font-mono">${r.etf_code || '--'}</span>
+          </div>
         </div>
 
+        <!-- 策略状态双列固定对齐 -->
+        <div class="card-strategy-status-grid">
+          <div class="strat-stat-col">
+            <span class="strat-stat-label">🎯 主策略·位置</span>
+            <span class="strat-stat-val" style="color: ${s2ColColor};">${s2ColText}</span>
+          </div>
+          <div class="strat-stat-col">
+            <span class="strat-stat-label">⚡ 辅因子·波动</span>
+            <span class="strat-stat-val" style="color: ${s1ColColor};">${s1ColText}</span>
+          </div>
+        </div>
+
+        <!-- 综合决策整齐横幅 -->
+        <div class="report-advice-banner advice-${r.advice_type}" style="padding: 6px 10px; font-size: 11px; margin: 4px 0 6px 0;">
+          ${r.final_advice}
+        </div>
+
+        <!-- 相对位置标尺 -->
         ${r.s2 ? `
-          <div class="gauge-wrapper" style="margin-top: 8px;">
+          <div class="gauge-wrapper" style="margin-top: 6px;">
             <div class="gauge-track">
               <div class="gauge-zones">
                 <div class="zone-buy" style="width: ${r.s2.low_bound}%;"></div>
@@ -468,8 +531,8 @@ async function generateVisualPortfolioReport() {
         ` : ''}
 
         <div class="visual-card-hint">
-          <span>📊 点击查看完整策略明细与历史极值</span>
-          <span>详细报告 ›</span>
+          <span>📊 历史波动: ${cfg.volatility}% (周期${cfg.days}d / 阈值${cfg.threshold}%)</span>
+          <span style="color: var(--primary); font-weight: 600;">详细报告 ›</span>
         </div>
       </div>
     `;
@@ -638,10 +701,31 @@ function handleDeleteFund(fundId, fundName) {
   }
 }
 
+// 动态更新设置说明中的3倍/4倍/5倍金额预览
+function updateSettingsPreview(val) {
+  const base = parseFloat(val);
+  const span3 = document.getElementById('dynamicX3');
+  const span4 = document.getElementById('dynamicX4');
+  const span5 = document.getElementById('dynamicX5');
+  if (!span3 || !span4 || !span5) return;
+
+  if (isNaN(base) || base <= 0) {
+    span3.textContent = '¥--';
+    span4.textContent = '¥--';
+    span5.textContent = '¥--';
+  } else {
+    span3.textContent = `¥${Math.round(base * 3)}`;
+    span4.textContent = `¥${Math.round(base * 4)}`;
+    span5.textContent = `¥${Math.round(base * 5)}`;
+  }
+}
+
 // 全局参数设置
 function openSettingsModal() {
   const settings = StorageManager.getSettings();
-  document.getElementById('settingBaseAmount').value = settings.baseUnitAmount || 100;
+  const base = settings.baseUnitAmount || 100;
+  document.getElementById('settingBaseAmount').value = base;
+  updateSettingsPreview(base);
   openModal('settingsModal');
 }
 

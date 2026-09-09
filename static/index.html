@@ -232,11 +232,11 @@
               单笔基准交易金额 (1 份 / 标准单位) <span style="color: var(--up-color);">*</span>
             </label>
             <div class="form-input-row">
-              <input type="number" id="settingBaseAmount" class="form-input" min="10" step="10" placeholder="如 100" required>
+              <input type="number" id="settingBaseAmount" class="form-input" min="10" step="10" placeholder="如 100" required oninput="updateSettingsPreview(this.value)">
               <span style="display: flex; align-items: center; font-size: 13px; color: var(--text-muted); padding: 0 8px; flex-shrink: 0;">元/份</span>
             </div>
-            <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px; line-height: 1.5;">
-              💡 <b>人话解释</b>：此金额即为常规低位加仓时的 <b>1 份基准定投金额</b>。当触发低位暴跌共振时，系统将自动按 <b>3倍(¥300) / 4倍(¥400) / 5倍(¥500)</b> 给出加码指引。
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px; line-height: 1.6;">
+              💡 <b>说明</b>：此金额为常规低位加仓时的 <b>1 份基准额度</b>。触发低位暴跌共振时，系统将自动按 <b>3倍(<span id="dynamicX3" style="color: #ff6b6b; font-weight: 700;">¥300</span>) / 4倍(<span id="dynamicX4" style="color: #ff6b6b; font-weight: 700;">¥400</span>) / 5倍(<span id="dynamicX5" style="color: #ff6b6b; font-weight: 700;">¥500</span>)</b> 给出加码指引。
             </div>
           </div>
 
