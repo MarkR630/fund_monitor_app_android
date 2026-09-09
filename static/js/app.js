@@ -156,7 +156,7 @@ function renderSingleFundReport(r) {
   const change = r.current_change || 0.0;
   const isUp = change > 0;
   const isDown = change < 0;
-  const changeClass = isUp ? 'color-up' : (isDown ? 'color-down' : 'color-neutral');
+  const changeClass = isUp ? 'color-up' : (isDown ? 'color-down' : 'color-flat');
   const changeSign = isUp ? '+' : '';
 
   const strat = r.strat_config || {
@@ -244,7 +244,7 @@ function renderSingleFundReport(r) {
       </div>
       <div class="strategy-metric-row">
         <span>仓位强化指引</span>
-        <span class="strategy-metric-val" style="color:${s1.signal === 'BUY' ? '#ff6b6b' : (s1.signal === 'SELL' ? '#34d399' : 'var(--text-muted)')}; font-weight: 600;">
+        <span class="strategy-metric-val" style="color:${s1.signal === 'BUY' ? 'var(--up-color)' : (s1.signal === 'SELL' ? 'var(--down-color)' : 'var(--text-muted)')}; font-weight: 600;">
           ${s1.signal === 'BUY' ? `低位遇恐慌暴跌 ➔ 加码至 ${strat.multiplier} 份 (¥${strat.baseAmount * strat.multiplier})` : (s1.signal === 'SELL' ? `高位遇赶顶超涨 ➔ 加大止盈至 ${strat.multiplier} 份 (¥${strat.baseAmount * strat.multiplier})` : `正常日度波动，按常规 1 份 (¥${strat.baseAmount}) 执行`)}
         </span>
       </div>
@@ -384,7 +384,7 @@ async function generateVisualPortfolioReport() {
       <div class="urgent-item-card" onclick="openFundDetailFromReport('${item.code}')" title="点击查看【${escapeHtml(item.name)}】详细监控报告">
         <div class="urgent-item-header">
           <div class="urgent-item-title">
-            <span style="color: #f87171;">⚡</span>
+            <span style="color: var(--up-color);">⚡</span>
             <span>${escapeHtml(item.name)}</span>
             <span class="urgent-code-badge">${item.code}</span>
           </div>
@@ -405,7 +405,7 @@ async function generateVisualPortfolioReport() {
     const change = r.current_change || 0;
     const isUp = change > 0;
     const isDown = change < 0;
-    const changeClass = isUp ? 'color-up' : (isDown ? 'color-down' : 'color-neutral');
+    const changeClass = isUp ? 'color-up' : (isDown ? 'color-down' : 'color-flat');
     const changeSign = isUp ? '+' : '';
     const posRatioClamped = r.s2 ? Math.min(100, Math.max(0, r.s2.pos_ratio)) : 50;
     const cfg = r.strat_config;
@@ -449,10 +449,10 @@ async function generateVisualPortfolioReport() {
     if (r.s2) {
       if (r.s2.pos_ratio <= r.s2.low_bound) {
         s2ColText = `🟢 低位 ${r.s2.pos_ratio}% (≤${r.s2.low_bound}%)`;
-        s2ColColor = '#f87171';
+        s2ColColor = 'var(--up-color)';
       } else if (r.s2.pos_ratio >= r.s2.high_bound) {
         s2ColText = `🔴 高位 ${r.s2.pos_ratio}% (≥${r.s2.high_bound}%)`;
-        s2ColColor = '#34d399';
+        s2ColColor = 'var(--down-color)';
       } else {
         s2ColText = `⚪ 中位 ${r.s2.pos_ratio}%`;
       }
@@ -463,10 +463,10 @@ async function generateVisualPortfolioReport() {
     if (r.s1 && r.s1.signal) {
       if (r.s1.signal === 'BUY') {
         s1ColText = `🔥 恐慌超跌 (加码${cfg.multiplier}倍)`;
-        s1ColColor = '#ff6b6b';
+        s1ColColor = 'var(--up-color)';
       } else if (r.s1.signal === 'SELL') {
         s1ColText = `🚨 极值超涨 (加码${cfg.multiplier}倍)`;
-        s1ColColor = '#34d399';
+        s1ColColor = 'var(--down-color)';
       }
     }
 

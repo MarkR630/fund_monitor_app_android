@@ -2,6 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
+  <meta name="theme-color" content="#1677ff">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -10,32 +11,36 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <div class="container">
-    <!-- Header -->
-    <header class="app-header">
-      <div class="logo-area">
-        <img src="assets/icon.png" class="logo-img" alt="点基">
-        <div>
-          <div class="app-title">点基</div>
-          <div class="app-subtitle">基金智能策略监控</div>
+  <!-- Alipay Style Blue Header Banner (Edge-to-Edge) -->
+  <header class="app-header-banner">
+    <div class="header-container">
+      <div class="header-inner">
+        <div class="logo-area">
+          <img src="assets/icon.png" class="logo-img" alt="点基">
+          <div>
+            <div class="app-title">点基</div>
+            <div class="app-subtitle">量化策略 · 智能监控</div>
+          </div>
+        </div>
+        <div class="user-toolbar">
+          <button class="btn-icon-white" onclick="openSettingsModal()" title="全局策略与金额设置">⚙️</button>
+          <button class="btn-icon-white" onclick="openBackupModal()" title="备份与还原">💾</button>
         </div>
       </div>
-      <div class="user-toolbar">
-        <button class="btn-icon" onclick="openSettingsModal()" title="全局策略与金额设置">⚙️</button>
-        <button class="btn-icon" onclick="openBackupModal()" title="备份与还原">💾</button>
+
+      <!-- Action Buttons embedded in blue banner -->
+      <div class="header-action-bar">
+        <button class="btn-banner-primary" onclick="openAddFundModal()">
+          <span>➕</span> 添加监控基金
+        </button>
+        <button class="btn-banner-secondary" onclick="generateVisualPortfolioReport()">
+          <span>📋</span> 一键汇总报告
+        </button>
       </div>
-    </header>
-
-    <!-- Action Toolbar -->
-    <div class="action-bar">
-      <button class="btn-action btn-primary" onclick="openAddFundModal()">
-        <span>➕</span> 添加监控基金
-      </button>
-      <button class="btn-action btn-secondary" onclick="generateVisualPortfolioReport()">
-        <span>📋</span> 一键汇总报告
-      </button>
     </div>
+  </header>
 
+  <div class="container">
     <!-- Fund List Header -->
     <div class="section-header">
       <div class="section-title">我的监控目录</div>
@@ -69,7 +74,7 @@
       <div class="modal-header">
         <div class="modal-title">全组合智能监控报告</div>
         <div style="display: flex; gap: 8px; align-items: center;">
-          <button class="btn-card-mini" style="background: var(--primary); color:#fff; border:none;" onclick="copyPortfolioTextReport()">
+          <button class="btn-card-mini" style="background: var(--primary); color:#ffffff; border:none; border-radius: 14px; padding: 4px 10px; font-weight: 600;" onclick="copyPortfolioTextReport()">
             📋 一键复制文本
           </button>
           <button class="modal-close" onclick="closeModal('portfolioVisualModal')">✕</button>
@@ -84,7 +89,7 @@
           </div>
           <div class="stat-card">
             <div class="stat-label">需操作警报</div>
-            <div id="statAction" class="stat-value" style="color: #f87171;">0</div>
+            <div id="statAction" class="stat-value" style="color: #cf1322;">0</div>
           </div>
           <div class="stat-card">
             <div class="stat-label">建议加仓</div>
@@ -166,7 +171,7 @@
           </div>
 
           <!-- 自定义策略参数区域 -->
-          <div id="customStrategySection" style="display: none; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; margin-bottom: 14px;">
+          <div id="customStrategySection" style="display: none; background: #f8fafc; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; margin-bottom: 14px;">
             <div style="display: flex; gap: 8px; margin-bottom: 8px;">
               <div style="flex: 1;">
                 <label class="form-label" style="font-size: 11px;">回溯天数</label>
@@ -238,7 +243,7 @@
               <span style="display: flex; align-items: center; font-size: 13px; color: var(--text-muted); padding: 0 8px; flex-shrink: 0;">元/份</span>
             </div>
             <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px; line-height: 1.6;">
-              💡 <b>说明</b>：此金额为常规低位加仓时的 <b>1 份基准额度</b>。触发低位暴跌共振时，系统将自动按 <b>3倍(<span id="dynamicX3" style="color: #ff6b6b; font-weight: 700;">¥300</span>) / 4倍(<span id="dynamicX4" style="color: #ff6b6b; font-weight: 700;">¥400</span>) / 5倍(<span id="dynamicX5" style="color: #ff6b6b; font-weight: 700;">¥500</span>)</b> 给出加码指引。
+              💡 <b>说明</b>：此金额为常规低位加仓时的 <b>1 份基准额度</b>。触发低位暴跌共振时，系统将自动按 <b>3倍(<span id="dynamicX3" style="color: var(--up-color); font-weight: 700;">¥300</span>) / 4倍(<span id="dynamicX4" style="color: var(--up-color); font-weight: 700;">¥400</span>) / 5倍(<span id="dynamicX5" style="color: var(--up-color); font-weight: 700;">¥500</span>)</b> 给出加码指引。
             </div>
           </div>
 
@@ -246,7 +251,7 @@
             <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">
               🤖 默认自适应分层依据 (年化波动率 σ)：
             </div>
-            <div style="font-size: 11px; color: var(--text-muted); line-height: 1.6; background: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
+            <div style="font-size: 11px; color: var(--text-muted); line-height: 1.6; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
               • <b>低波型 (σ ≤ 18%)</b>：45天 / 20%阈值 / 3倍加码买入<br>
               • <b>中波型 (18% &lt; σ ≤ 28%)</b>：90天 / 20%阈值 / 4倍加码买入<br>
               • <b>高波型 (σ &gt; 28%)</b>：100天 / 30%宽阈值 / 5倍加码买入<br>
