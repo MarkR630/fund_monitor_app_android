@@ -1,4 +1,6 @@
-// 基金智能监控 (纯手机单机版) 主交互逻辑
+/**
+ * 基金智能监控移动端应用交互主逻辑 (纯手机端单机运行)
+ */
 let cachedFunds = [];
 let lastGeneratedPortfolioText = '';
 let lastPortfolioResults = [];
@@ -15,10 +17,7 @@ function closeModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) {
     modal.classList.remove('active');
-    const remainingActive = document.querySelectorAll('.modal-overlay.active');
-    if (remainingActive.length === 0) {
-      document.body.style.overflow = '';
-    }
+    document.body.style.overflow = '';
   }
 }
 
@@ -29,15 +28,22 @@ function handleOverlayClick(event, modalId) {
 }
 
 let toastTimer = null;
-function showToast(msg, duration = 2500) {
-  const toast = document.getElementById('toastBox');
-  if (!toast) return;
-  toast.textContent = msg;
-  toast.classList.add('show');
+function showToast(message, duration = 2200) {
+  const box = document.getElementById('toastBox');
+  if (!box) return;
+  box.textContent = message;
+  box.classList.add('show');
   if (toastTimer) clearTimeout(toastTimer);
   toastTimer = setTimeout(() => {
-    toast.classList.remove('show');
+    box.classList.remove('show');
   }, duration);
+}
+
+function getProfileBadgeClass(profileKey) {
+  if (profileKey === 'low') return 'badge-profile-low';
+  if (profileKey === 'high') return 'badge-profile-high';
+  if (profileKey === 'custom') return 'badge-profile-custom';
+  return 'badge-profile-mid';
 }
 
 function loadFunds() {
@@ -56,30 +62,40 @@ function loadFunds() {
     return;
   }
 
-  container.innerHTML = cachedFunds.map(fund => `
-    <div class="fund-card" id="card-${fund.id}">
-      <div class="fund-card-top">
-        <div>
-          <div class="fund-card-title">${escapeHtml(fund.fund_name)}</div>
-          <div class="fund-card-code">
-            <span>${fund.fund_code}</span>
-            ${fund.etf_code ? `<span class="etf-tag">联接 ${fund.etf_code}</span>` : ''}
+  container.innerHTML = cachedFunds.map(fund => {
+    let modeTag = '';
+    if (fund.strategy_mode === 'custom') {
+      modeTag = `<span class="badge-profile badge-profile-custom">⚙️ 自定义 (${fund.custom_days || 90}d/${fund.custom_threshold || 20}%/${fund.custom_multiplier || 4}x)</span>`;
+    } else {
+      modeTag = `<span class="badge-profile badge-profile-mid">🤖 波动率自适应</span>`;
+    }
+
+    return `
+      <div class="fund-card" id="card-${fund.id}">
+        <div class="fund-card-top">
+          <div>
+            <div class="fund-card-title">${escapeHtml(fund.fund_name)}</div>
+            <div class="fund-card-code" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 4px;">
+              <span style="font-weight: 600;">${fund.fund_code}</span>
+              ${fund.etf_code ? `<span class="etf-tag">联接 ${fund.etf_code}</span>` : ''}
+              ${modeTag}
+            </div>
+          </div>
+          <div class="fund-card-actions">
+            <button class="btn-card-mini btn-card-monitor" id="btn-monitor-${fund.id}" onclick="handleSingleMonitor('${fund.id}')">
+              🎯 监控
+            </button>
+            <button class="btn-card-mini" onclick="openEditFundModal('${fund.id}')" title="编辑">
+              ✏️
+            </button>
+            <button class="btn-card-mini" onclick="handleDeleteFund('${fund.id}', '${escapeHtml(fund.fund_name)}')" title="删除" style="color: #f87171;">
+              🗑️
+            </button>
           </div>
         </div>
-        <div class="fund-card-actions">
-          <button class="btn-card-mini btn-card-monitor" id="btn-monitor-${fund.id}" onclick="handleSingleMonitor('${fund.id}')">
-            🎯 监控
-          </button>
-          <button class="btn-card-mini" onclick="openEditFundModal('${fund.id}')" title="编辑">
-            ✏️
-          </button>
-          <button class="btn-card-mini" onclick="handleDeleteFund('${fund.id}', '${escapeHtml(fund.fund_name)}')" title="删除" style="color: #f87171;">
-            🗑️
-          </button>
-        </div>
       </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
 // 单基即时量化体检 (从主列表点击【🎯 监控】进入)
@@ -120,33 +136,45 @@ function openFundDetailFromReport(fundCode) {
   openModal('monitorModal');
 }
 
-// 渲染单基金全套监控报告详细信息
+// 渲染单基详细监控报告弹窗
 function renderSingleFundReport(r) {
   const content = document.getElementById('monitorContent');
-  const change = r.current_change || 0;
+  const change = r.current_change || 0.0;
   const isUp = change > 0;
   const isDown = change < 0;
   const changeClass = isUp ? 'color-up' : (isDown ? 'color-down' : 'color-neutral');
   const changeSign = isUp ? '+' : '';
 
-  // [主策略·定方向] 近90天相对位置标尺
+  const strat = r.strat_config || {
+    profileKey: 'mid',
+    profileName: '中波型',
+    profileBadge: '中波型',
+    days: 90,
+    threshold: 20,
+    multiplier: 4,
+    baseAmount: 100,
+    volatility: 20.0
+  };
+  const profileBadgeClass = getProfileBadgeClass(strat.profileKey);
+
+  // [主策略·定方向] 近 N 天相对位置标尺
   const s2 = r.s2;
   let s2Html = '<div style="color: var(--text-muted); font-size: 13px;">历史数据不足，未能完成主策略评估</div>';
   if (s2) {
     let s2Trigger = 'trigger-no';
-    let s2TriggerText = '中位观望区 (滤除单日波动)';
-    if (s2.pos_ratio <= 20.0) {
+    let s2TriggerText = '中位观望区 (滤除单日杂波)';
+    if (s2.pos_ratio <= s2.low_bound) {
       s2Trigger = 'trigger-yes';
-      s2TriggerText = '🟢 进入低位加仓区 (≤20%)';
-    } else if (s2.pos_ratio >= 80.0) {
+      s2TriggerText = `🟢 进入低位加仓区 (≤${s2.low_bound}%)`;
+    } else if (s2.pos_ratio >= s2.high_bound) {
       s2Trigger = 'trigger-yes';
-      s2TriggerText = '🔴 进入高位减仓区 (≥80%)';
+      s2TriggerText = `🔴 进入高位减仓区 (≥${s2.high_bound}%)`;
     }
     const posRatioClamped = Math.min(100, Math.max(0, s2.pos_ratio));
 
     s2Html = `
       <div class="strategy-title-row">
-        <span class="strategy-name">🎯 [主策略·定方向] 近90天相对位置标尺</span>
+        <span class="strategy-name">🎯 [主策略·定方向] 近${s2.days}天相对位置标尺</span>
         <span class="trigger-tag ${s2Trigger}">${s2TriggerText}</span>
       </div>
       <div class="strategy-metric-row">
@@ -160,23 +188,23 @@ function renderSingleFundReport(r) {
       <div class="gauge-wrapper">
         <div class="gauge-track">
           <div class="gauge-zones">
-            <div class="zone-buy"></div>
-            <div class="zone-normal"></div>
-            <div class="zone-sell"></div>
+            <div class="zone-buy" style="width: ${s2.low_bound}%;"></div>
+            <div class="zone-normal" style="left: ${s2.low_bound}%; width: ${s2.high_bound - s2.low_bound}%;"></div>
+            <div class="zone-sell" style="left: ${s2.high_bound}%; width: ${100 - s2.high_bound}%;"></div>
           </div>
           <div class="gauge-pin" style="left: ${posRatioClamped}%;"></div>
         </div>
         <div class="gauge-markers">
-          <span>0% (低位加仓 &le;20%)</span>
-          <span>高位减仓 &ge;80% (100%)</span>
+          <span>0% (低位加仓 ≤${s2.low_bound}%)</span>
+          <span>高位减仓 ≥${s2.high_bound}% (100%)</span>
         </div>
       </div>
       <div class="strategy-metric-row" style="margin-top: 8px;">
-        <span>近90天最高点</span>
+        <span>近${s2.days}天最高点</span>
         <span class="strategy-metric-val">${s2.highest} (${s2.highest_date})</span>
       </div>
       <div class="strategy-metric-row">
-        <span>近90天最低点</span>
+        <span>近${s2.days}天最低点</span>
         <span class="strategy-metric-val">${s2.lowest} (${s2.lowest_date})</span>
       </div>
     `;
@@ -187,13 +215,13 @@ function renderSingleFundReport(r) {
   let s1Html = '<div style="color: var(--text-muted); font-size: 13px;">历史数据不足，未能完成增强策略评估</div>';
   if (s1) {
     let s1Trigger = 'trigger-no';
-    let s1TriggerText = '常态波动 (无强化)';
+    let s1TriggerText = '常态波动 (按基准1份执行)';
     if (s1.signal === 'BUY') {
       s1Trigger = 'trigger-yes';
-      s1TriggerText = '🔥 恐慌超跌 (加仓强化)';
+      s1TriggerText = `🔥 恐慌暴跌 (加仓放大至${strat.multiplier}倍)`;
     } else if (s1.signal === 'SELL') {
       s1Trigger = 'trigger-yes';
-      s1TriggerText = '🚨 极值超涨 (减仓强化)';
+      s1TriggerText = `🚨 极值超涨 (减仓放大至${strat.multiplier}倍)`;
     }
     s1Html = `
       <div class="strategy-title-row">
@@ -201,9 +229,9 @@ function renderSingleFundReport(r) {
         <span class="trigger-tag ${s1Trigger}">${s1TriggerText}</span>
       </div>
       <div class="strategy-metric-row">
-        <span>仓位强化效果</span>
+        <span>仓位强化指引</span>
         <span class="strategy-metric-val" style="color:${s1.signal === 'BUY' ? '#ff6b6b' : (s1.signal === 'SELL' ? '#34d399' : 'var(--text-muted)')}; font-weight: 600;">
-          ${s1.signal === 'BUY' ? '低位遇恐慌暴跌 ➔ 加大加仓力度' : (s1.signal === 'SELL' ? '高位遇冲高狂热 ➔ 加大止盈力度' : '正常波动，按主策略基准执行')}
+          ${s1.signal === 'BUY' ? `低位遇恐慌暴跌 ➔ 加码至 ${strat.multiplier} 份 (¥${strat.baseAmount * strat.multiplier})` : (s1.signal === 'SELL' ? `高位遇赶顶超涨 ➔ 加大止盈至 ${strat.multiplier} 份 (¥${strat.baseAmount * strat.multiplier})` : `正常日度波动，按常规 1 份 (¥${strat.baseAmount}) 执行`)}
         </span>
       </div>
       <div class="strategy-metric-row">
@@ -235,6 +263,12 @@ function renderSingleFundReport(r) {
         ${changeSign}${change.toFixed(2)}%
       </div>
       <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">今日实时预估涨跌</div>
+
+      <div style="display: flex; gap: 6px; margin: 8px 0 0 0; align-items: center; justify-content: center; flex-wrap: wrap;">
+        <span class="badge-profile ${profileBadgeClass}">${strat.profileBadge}</span>
+        <span class="trade-unit-tag">年化波动率: ${strat.volatility}%</span>
+        <span class="trade-unit-tag">基准: 1份=¥${strat.baseAmount} | 共振=${strat.multiplier}倍</span>
+      </div>
     </div>
 
     <div class="report-advice-banner advice-${r.advice_type}">
@@ -279,9 +313,9 @@ async function generateVisualPortfolioReport() {
   document.getElementById('portfolioPlainText').textContent = '计算中...';
 
   const results = [];
+  let actionCount = 0;
   let buyCount = 0;
   let sellCount = 0;
-  let actionCount = 0;
   const urgentItems = [];
 
   for (const fund of cachedFunds) {
@@ -342,7 +376,7 @@ async function generateVisualPortfolioReport() {
     alertBox.style.display = 'none';
   }
 
-  // 渲染全部基金可视化卡片列表 (高优先级带有独特彩色标识条与醒目标签)
+  // 渲染全部基金可视化卡片列表
   const listContainer = document.getElementById('portfolioVisualList');
   listContainer.innerHTML = results.map(r => {
     const change = r.current_change || 0;
@@ -351,13 +385,15 @@ async function generateVisualPortfolioReport() {
     const changeClass = isUp ? 'color-up' : (isDown ? 'color-down' : 'color-neutral');
     const changeSign = isUp ? '+' : '';
     const posRatioClamped = r.s2 ? Math.min(100, Math.max(0, r.s2.pos_ratio)) : 50;
+    const cfg = r.strat_config;
+    const profileBadgeClass = getProfileBadgeClass(cfg.profileKey);
 
     let s2Badge = '';
     if (r.s2) {
-      if (r.s2.pos_ratio <= 20.0) {
-        s2Badge = `<span class="trigger-tag trigger-yes">🎯 低位加仓区 ${r.s2.pos_ratio}%</span>`;
-      } else if (r.s2.pos_ratio >= 80.0) {
-        s2Badge = `<span class="trigger-tag trigger-yes">🎯 高位减仓区 ${r.s2.pos_ratio}%</span>`;
+      if (r.s2.pos_ratio <= r.s2.low_bound) {
+        s2Badge = `<span class="trigger-tag trigger-yes">🎯 低位加仓区 ${r.s2.pos_ratio}% (≤${r.s2.low_bound}%)</span>`;
+      } else if (r.s2.pos_ratio >= r.s2.high_bound) {
+        s2Badge = `<span class="trigger-tag trigger-yes">🎯 高位减仓区 ${r.s2.pos_ratio}% (≥${r.s2.high_bound}%)</span>`;
       } else {
         s2Badge = `<span class="trigger-tag trigger-no">🎯 中位区 ${r.s2.pos_ratio}%</span>`;
       }
@@ -365,7 +401,7 @@ async function generateVisualPortfolioReport() {
 
     let s1Badge = '';
     if (r.s1 && r.s1.signal) {
-      const s1Txt = r.s1.signal === 'BUY' ? '⚡ 恐慌超跌强化' : '⚡ 极值超涨强化';
+      const s1Txt = r.s1.signal === 'BUY' ? `⚡ 恐慌超跌 (加码${cfg.multiplier}倍)` : `⚡ 极值超涨 (加码${cfg.multiplier}倍)`;
       s1Badge = `<span class="trigger-tag trigger-yes">${s1Txt}</span>`;
     }
 
@@ -373,16 +409,16 @@ async function generateVisualPortfolioReport() {
     let actionTag = '';
     if (r.advice_type === 'STRONG_BUY') {
       actionClass = 'visual-fund-action-strong-buy';
-      actionTag = '<span class="action-priority-tag tag-strong-buy">🔥 强力加仓</span>';
+      actionTag = `<span class="action-priority-tag tag-strong-buy">🔥 强力加仓 ${r.suggested_units} 份 (¥${r.suggested_amount})</span>`;
     } else if (r.advice_type === 'BUY') {
       actionClass = 'visual-fund-action-buy';
-      actionTag = '<span class="action-priority-tag tag-buy">🌱 常规加仓</span>';
+      actionTag = `<span class="action-priority-tag tag-buy">🌱 常规加仓 1 份 (¥${r.suggested_amount})</span>`;
     } else if (r.advice_type === 'STRONG_SELL') {
       actionClass = 'visual-fund-action-strong-sell';
-      actionTag = '<span class="action-priority-tag tag-strong-sell">🚨 强力减仓</span>';
+      actionTag = `<span class="action-priority-tag tag-strong-sell">🚨 强力减仓 ${r.suggested_units} 份 (¥${r.suggested_amount})</span>`;
     } else if (r.advice_type === 'SELL') {
       actionClass = 'visual-fund-action-sell';
-      actionTag = '<span class="action-priority-tag tag-sell">🍂 常规减仓</span>';
+      actionTag = `<span class="action-priority-tag tag-sell">🍂 常规减仓 1 份 (¥${r.suggested_amount})</span>`;
     }
 
     return `
@@ -394,7 +430,11 @@ async function generateVisualPortfolioReport() {
               <span>${escapeHtml(r.fund_name)}</span>
               <span class="detail-link-tag">详细报告 ›</span>
             </div>
-            <div class="visual-item-code">代码: ${r.fund_code} ${r.etf_code ? `| 联接: ${r.etf_code}` : ''}</div>
+            <div class="visual-item-code">
+              代码: ${r.fund_code} ${r.etf_code ? `| 联接: ${r.etf_code}` : ''} |
+              <span class="badge-profile ${profileBadgeClass}" style="font-size: 10px; padding: 1px 5px;">${cfg.profileBadge}</span>
+              | 基准 ¥${cfg.baseAmount}
+            </div>
           </div>
           <div class="visual-item-badge ${changeClass}">
             ${changeSign}${change.toFixed(2)}%
@@ -402,8 +442,8 @@ async function generateVisualPortfolioReport() {
         </div>
 
         <div style="display: flex; gap: 6px; margin: 6px 0; flex-wrap: wrap;">
-          ${s1Badge}
           ${s2Badge}
+          ${s1Badge}
           <span class="report-advice-banner advice-${r.advice_type}" style="padding: 2px 8px; font-size: 11px; margin: 0;">
             ${r.final_advice}
           </span>
@@ -413,16 +453,16 @@ async function generateVisualPortfolioReport() {
           <div class="gauge-wrapper" style="margin-top: 8px;">
             <div class="gauge-track">
               <div class="gauge-zones">
-                <div class="zone-buy"></div>
-                <div class="zone-normal"></div>
-                <div class="zone-sell"></div>
+                <div class="zone-buy" style="width: ${r.s2.low_bound}%;"></div>
+                <div class="zone-normal" style="left: ${r.s2.low_bound}%; width: ${r.s2.high_bound - r.s2.low_bound}%;"></div>
+                <div class="zone-sell" style="left: ${r.s2.high_bound}%; width: ${100 - r.s2.high_bound}%;"></div>
               </div>
               <div class="gauge-pin" style="left: ${posRatioClamped}%;"></div>
             </div>
             <div class="gauge-markers">
-              <span>低位区间 (&le;20%)</span>
+              <span>低位区 (≤${r.s2.low_bound}%)</span>
               <span style="color: var(--text-main); font-weight: 600;">相对位置: ${r.s2.pos_ratio}%</span>
-              <span>高位区间 (&ge;80%)</span>
+              <span>高位区 (≥${r.s2.high_bound}%)</span>
             </div>
           </div>
         ` : ''}
@@ -497,6 +537,15 @@ async function lookupFundName() {
   }
 }
 
+function toggleCustomStrategyFields() {
+  const checked = document.querySelector('input[name="strategyMode"]:checked');
+  const isCustom = checked && checked.value === 'custom';
+  const sec = document.getElementById('customStrategySection');
+  if (sec) {
+    sec.style.display = isCustom ? 'block' : 'none';
+  }
+}
+
 function openAddFundModal() {
   document.getElementById('fundModalTitle').textContent = '添加监控基金';
   document.getElementById('editFundId').value = '';
@@ -504,6 +553,16 @@ function openAddFundModal() {
   document.getElementById('inputFundCode').disabled = false;
   document.getElementById('inputFundName').value = '';
   document.getElementById('inputEtfCode').value = '';
+
+  const autoRadio = document.querySelector('input[name="strategyMode"][value="auto"]');
+  if (autoRadio) autoRadio.checked = true;
+  toggleCustomStrategyFields();
+
+  document.getElementById('inputCustomDays').value = 90;
+  document.getElementById('inputCustomThreshold').value = 20;
+  document.getElementById('inputCustomMultiplier').value = 4;
+  document.getElementById('inputCustomBaseAmount').value = '';
+
   openModal('fundModal');
 }
 
@@ -516,6 +575,17 @@ function openEditFundModal(fundId) {
   document.getElementById('inputFundCode').disabled = true;
   document.getElementById('inputFundName').value = fund.fund_name;
   document.getElementById('inputEtfCode').value = fund.etf_code || '';
+
+  const isCustom = fund.strategy_mode === 'custom';
+  const targetRadio = document.querySelector(`input[name="strategyMode"][value="${isCustom ? 'custom' : 'auto'}"]`);
+  if (targetRadio) targetRadio.checked = true;
+  toggleCustomStrategyFields();
+
+  document.getElementById('inputCustomDays').value = fund.custom_days || 90;
+  document.getElementById('inputCustomThreshold').value = fund.custom_threshold || 20;
+  document.getElementById('inputCustomMultiplier').value = fund.custom_multiplier || 4;
+  document.getElementById('inputCustomBaseAmount').value = fund.custom_base_amount || '';
+
   openModal('fundModal');
 }
 
@@ -526,12 +596,31 @@ function handleFundSubmit(event) {
   const fund_name = document.getElementById('inputFundName').value.trim();
   const etf_code = document.getElementById('inputEtfCode').value.trim();
 
+  const checkedMode = document.querySelector('input[name="strategyMode"]:checked');
+  const strategy_mode = checkedMode ? checkedMode.value : 'auto';
+  const custom_days = parseInt(document.getElementById('inputCustomDays').value) || 90;
+  const custom_threshold = parseFloat(document.getElementById('inputCustomThreshold').value) || 20;
+  const custom_multiplier = parseInt(document.getElementById('inputCustomMultiplier').value) || 4;
+  const custom_base_raw = document.getElementById('inputCustomBaseAmount').value.trim();
+  const custom_base_amount = custom_base_raw ? parseFloat(custom_base_raw) : null;
+
+  const payload = {
+    fund_code,
+    fund_name,
+    etf_code,
+    strategy_mode,
+    custom_days,
+    custom_threshold,
+    custom_multiplier,
+    custom_base_amount
+  };
+
   try {
     if (editId) {
-      StorageManager.updateFund(editId, { fund_name, etf_code });
+      StorageManager.updateFund(editId, payload);
       showToast('更新成功！');
     } else {
-      StorageManager.addFund({ fund_code, fund_name, etf_code });
+      StorageManager.addFund(payload);
       showToast('添加成功！');
     }
     closeModal('fundModal');
@@ -547,6 +636,21 @@ function handleDeleteFund(fundId, fundName) {
     showToast('已移除');
     loadFunds();
   }
+}
+
+// 全局参数设置
+function openSettingsModal() {
+  const settings = StorageManager.getSettings();
+  document.getElementById('settingBaseAmount').value = settings.baseUnitAmount || 100;
+  openModal('settingsModal');
+}
+
+function handleSettingsSubmit(event) {
+  event.preventDefault();
+  const amt = parseFloat(document.getElementById('settingBaseAmount').value) || 100;
+  StorageManager.saveSettings({ baseUnitAmount: amt });
+  closeModal('settingsModal');
+  showToast(`✅ 全局基准定投金额已设为 ¥${amt}/份`);
 }
 
 function openBackupModal() {

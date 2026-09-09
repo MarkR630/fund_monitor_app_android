@@ -19,6 +19,7 @@
         </div>
       </div>
       <div class="user-toolbar">
+        <button class="btn-icon" onclick="openSettingsModal()" title="全局策略与金额设置">⚙️</button>
         <button class="btn-icon" onclick="openBackupModal()" title="备份与还原">💾</button>
       </div>
     </header>
@@ -147,6 +148,43 @@
             </label>
             <input type="text" id="inputEtfCode" class="form-input" placeholder="如 sh561170 或 561170，有对应ETF估算更快">
           </div>
+
+          <div class="form-group">
+            <label class="form-label">策略调仓规则</label>
+            <div class="strategy-mode-selector">
+              <label class="mode-radio-label">
+                <input type="radio" name="strategyMode" value="auto" checked onchange="toggleCustomStrategyFields()">
+                <span>🤖 智能波动率自适应 (低波45d/中波90d/高波100d)</span>
+              </label>
+              <label class="mode-radio-label">
+                <input type="radio" name="strategyMode" value="custom" onchange="toggleCustomStrategyFields()">
+                <span>⚙️ 自定义参数策略 (自由微调天数/阈值/倍数)</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- 自定义策略参数区域 -->
+          <div id="customStrategySection" style="display: none; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; margin-bottom: 14px;">
+            <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+              <div style="flex: 1;">
+                <label class="form-label" style="font-size: 11px;">回溯天数</label>
+                <input type="number" id="inputCustomDays" class="form-input" placeholder="如 90" min="15" max="365" value="90">
+              </div>
+              <div style="flex: 1;">
+                <label class="form-label" style="font-size: 11px;">高低位阈值 (%)</label>
+                <input type="number" id="inputCustomThreshold" class="form-input" placeholder="如 20" min="5" max="45" value="20">
+              </div>
+              <div style="flex: 1;">
+                <label class="form-label" style="font-size: 11px;">共振加减倍数</label>
+                <input type="number" id="inputCustomMultiplier" class="form-input" placeholder="如 4" min="2" max="10" value="4">
+              </div>
+            </div>
+            <div>
+              <label class="form-label" style="font-size: 11px;">该基金专属基准金额 (元/份，留空默认继承全局)</label>
+              <input type="number" id="inputCustomBaseAmount" class="form-input" placeholder="如 100，留空使用全局设置">
+            </div>
+          </div>
+
           <button type="submit" id="btnFundSubmit" class="btn-submit">保 存</button>
         </form>
       </div>
@@ -176,6 +214,46 @@
         <button type="button" class="btn-action btn-secondary" style="width: 100%;" onclick="importBackupData()">
           📥 执行还原导入
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 全局策略与金额参数设置弹窗 -->
+  <div id="settingsModal" class="modal-overlay" onclick="handleOverlayClick(event, 'settingsModal')">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <div class="modal-title">⚙️ 全局交易参数设置</div>
+        <button class="modal-close" onclick="closeModal('settingsModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="settingsForm" onsubmit="handleSettingsSubmit(event)">
+          <div class="form-group">
+            <label class="form-label" for="settingBaseAmount">
+              单笔基准交易金额 (1 份 / 标准单位) <span style="color: var(--up-color);">*</span>
+            </label>
+            <div class="form-input-row">
+              <input type="number" id="settingBaseAmount" class="form-input" min="10" step="10" placeholder="如 100" required>
+              <span style="display: flex; align-items: center; font-size: 13px; color: var(--text-muted); padding: 0 8px; flex-shrink: 0;">元/份</span>
+            </div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px; line-height: 1.5;">
+              💡 <b>人话解释</b>：此金额即为常规低位加仓时的 <b>1 份基准定投金额</b>。当触发低位暴跌共振时，系统将自动按 <b>3倍(¥300) / 4倍(¥400) / 5倍(¥500)</b> 给出加码指引。
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top: 14px;">
+            <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">
+              🤖 默认自适应分层依据 (年化波动率 σ)：
+            </div>
+            <div style="font-size: 11px; color: var(--text-muted); line-height: 1.6; background: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
+              • <b>低波型 (σ ≤ 18%)</b>：45天 / 20%阈值 / 3倍加码买入<br>
+              • <b>中波型 (18% &lt; σ ≤ 28%)</b>：90天 / 20%阈值 / 4倍加码买入<br>
+              • <b>高波型 (σ &gt; 28%)</b>：100天 / 30%宽阈值 / 5倍加码买入<br>
+              <i>* 若单只基金需定制参数，可在编辑基金时切换为“自定义参数策略”。</i>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-submit" style="margin-top: 14px;">保 存 设 置</button>
+        </form>
       </div>
     </div>
   </div>

@@ -14,6 +14,7 @@ const StorageManager = {
       fund_code: '005827',
       fund_name: '易方达蓝筹精选混合',
       etf_code: '',
+      strategy_mode: 'auto',
       created_at: new Date().toISOString()
     },
     {
@@ -21,6 +22,7 @@ const StorageManager = {
       fund_code: '020096',
       fund_name: '富国中证绿色电力ETF发起式联接C',
       etf_code: 'sh561170',
+      strategy_mode: 'auto',
       created_at: new Date().toISOString()
     }
   ],
@@ -50,7 +52,7 @@ const StorageManager = {
     }
   },
 
-  addFund({ fund_code, fund_name, etf_code }) {
+  addFund({ fund_code, fund_name, etf_code, strategy_mode = 'auto', custom_days = 90, custom_threshold = 20, custom_multiplier = 4, custom_base_amount = null }) {
     const list = this.getFunds();
     const code = String(fund_code).trim();
     if (list.some(f => f.fund_code === code)) {
@@ -61,6 +63,11 @@ const StorageManager = {
       fund_code: code,
       fund_name: (fund_name || '').trim() || `基金_${code}`,
       etf_code: etf_code ? etf_code.trim() : '',
+      strategy_mode: strategy_mode === 'custom' ? 'custom' : 'auto',
+      custom_days: parseInt(custom_days) || 90,
+      custom_threshold: parseFloat(custom_threshold) || 20,
+      custom_multiplier: parseInt(custom_multiplier) || 4,
+      custom_base_amount: custom_base_amount ? parseFloat(custom_base_amount) : null,
       created_at: new Date().toISOString()
     };
     list.unshift(newFund);
@@ -68,12 +75,17 @@ const StorageManager = {
     return newFund;
   },
 
-  updateFund(id, { fund_name, etf_code }) {
+  updateFund(id, data) {
     const list = this.getFunds();
     const idx = list.findIndex(f => f.id === id);
     if (idx === -1) throw new Error('未找到该基金');
-    list[idx].fund_name = fund_name.trim();
-    list[idx].etf_code = etf_code ? etf_code.trim() : '';
+    list[idx].fund_name = data.fund_name ? data.fund_name.trim() : list[idx].fund_name;
+    list[idx].etf_code = data.etf_code !== undefined ? data.etf_code.trim() : list[idx].etf_code;
+    list[idx].strategy_mode = data.strategy_mode === 'custom' ? 'custom' : 'auto';
+    if (data.custom_days !== undefined) list[idx].custom_days = parseInt(data.custom_days) || 90;
+    if (data.custom_threshold !== undefined) list[idx].custom_threshold = parseFloat(data.custom_threshold) || 20;
+    if (data.custom_multiplier !== undefined) list[idx].custom_multiplier = parseInt(data.custom_multiplier) || 4;
+    list[idx].custom_base_amount = data.custom_base_amount ? parseFloat(data.custom_base_amount) : null;
     this.saveFunds(list);
     return list[idx];
   },
@@ -88,7 +100,7 @@ const StorageManager = {
 
   exportBackup() {
     const data = {
-      version: '1.0.0',
+      version: '1.1.0',
       exported_at: new Date().toISOString(),
       funds: this.getFunds(),
       settings: this.getSettings()
@@ -113,27 +125,23 @@ const StorageManager = {
   },
 
   getSettings() {
+    const defaults = {
+      baseUnitAmount: 100, // 全局默认交易单位金额 (x元 / 1份)
+      strategy1Days: 30
+    };
     try {
       const raw = localStorage.getItem(this.KEYS.SETTINGS);
-      return raw ? JSON.parse(raw) : {
-        strategy1Days: 30,
-        strategy2Days: 90,
-        strategy2HighRatio: 80,
-        strategy2LowRatio: 20
-      };
+      return raw ? { ...defaults, ...JSON.parse(raw) } : defaults;
     } catch (e) {
-      return {
-        strategy1Days: 30,
-        strategy2Days: 90,
-        strategy2HighRatio: 80,
-        strategy2LowRatio: 20
-      };
+      return defaults;
     }
   },
 
   saveSettings(settings) {
     try {
-      localStorage.setItem(this.KEYS.SETTINGS, JSON.stringify(settings));
+      const current = this.getSettings();
+      const updated = { ...current, ...settings };
+      localStorage.setItem(this.KEYS.SETTINGS, JSON.stringify(updated));
       return true;
     } catch (e) {
       return false;
