@@ -1,7 +1,7 @@
 {
   "name": "fund_monitor_app_android",
-  "version": "1.0.0",
-  "description": "基金智能策略监控纯手机独立单机版",
+  "version": "1.1.0",
+  "description": "点基 (DianJi) - 基金智能策略监控纯手机独立单机版",
   "main": "index.js",
   "scripts": {
     "build": "npx cap sync"
