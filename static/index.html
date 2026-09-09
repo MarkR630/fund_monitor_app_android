@@ -265,6 +265,19 @@
     </div>
   </div>
 
+    <!-- 自定义金融主题确认弹窗 (完全替代丑陋的系统原生 confirm) -->
+  <div id="confirmModal" class="modal-overlay modal-overlay-center" onclick="handleOverlayClick(event, 'confirmModal')">
+    <div class="confirm-dialog-card">
+      <div class="confirm-icon-wrap" id="confirmIcon">🗑️</div>
+      <div class="confirm-title" id="confirmTitle">移除监控基金</div>
+      <div class="confirm-message" id="confirmMessage">确定要将该基金从监控目录中移除吗？</div>
+      <div class="confirm-actions">
+        <button type="button" class="btn-confirm-cancel" onclick="closeConfirmDialog(false)">取 消</button>
+        <button type="button" class="btn-confirm-danger" id="btnConfirmOk" onclick="closeConfirmDialog(true)">确认移除</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast 提示框 -->
   <div id="toastBox" class="toast-box"></div>
 

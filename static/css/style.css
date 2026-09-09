@@ -281,6 +281,7 @@ body {
 
 .btn-card-mini:active {
   background: #edf2f7;
+  transform: scale(0.95);
 }
 
 .btn-card-monitor {
@@ -288,6 +289,22 @@ body {
   color: var(--primary) !important;
   border: 1px solid rgba(22, 119, 255, 0.28) !important;
   font-weight: 600;
+}
+
+.btn-card-edit {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #64748b !important;
+}
+
+.btn-card-delete {
+  background: #fff8f8 !important;
+  border: 1px solid #ffd6d6 !important;
+  color: #ff4d4f !important;
+}
+
+.btn-card-delete:active {
+  background: #ffebeb !important;
 }
 
 .fund-card-subline {
@@ -1199,4 +1216,109 @@ body {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   text-align: right;
+}
+
+/* Centered Confirm Dialog */
+.modal-overlay-center {
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 24px;
+}
+
+#confirmModal {
+  z-index: 1400 !important; /* 确保确认弹窗处于最高层级 */
+}
+
+.confirm-dialog-card {
+  background: #ffffff;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 320px;
+  padding: 24px 20px 20px 20px;
+  text-align: center;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.2), 0 4px 12px rgba(0, 0, 0, 0.06);
+  border: 1px solid #edf2f7;
+  animation: popIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.confirm-icon-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #fff1f0;
+  border: 1px solid #ffa39e;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 14px auto;
+  box-shadow: 0 4px 12px rgba(255, 77, 79, 0.12);
+}
+
+.confirm-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 8px;
+}
+
+.confirm-message {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 22px;
+  word-break: break-all;
+  padding: 0 4px;
+}
+
+.confirm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.btn-confirm-cancel {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: var(--text-secondary);
+  padding: 11px 16px;
+  border-radius: 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-confirm-cancel:active {
+  background: #e2e8f0;
+  transform: scale(0.97);
+}
+
+.btn-confirm-danger {
+  background: linear-gradient(135deg, #ff4d4f 0%, #cf1322 100%);
+  border: none;
+  color: #ffffff;
+  padding: 11px 16px;
+  border-radius: 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(255, 77, 79, 0.3);
+  transition: all 0.2s ease;
+}
+
+.btn-confirm-danger:active {
+  transform: scale(0.97);
+  opacity: 0.92;
 }

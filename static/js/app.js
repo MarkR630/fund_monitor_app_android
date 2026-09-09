@@ -95,10 +95,10 @@ function loadFunds() {
             <button class="btn-card-mini btn-card-monitor" id="btn-monitor-${fund.id}" onclick="handleSingleMonitor('${fund.id}')">
               🎯 监控
             </button>
-            <button class="btn-card-mini" onclick="openEditFundModal('${fund.id}')" title="编辑">
+            <button class="btn-card-mini btn-card-edit" onclick="openEditFundModal('${fund.id}')" title="编辑">
               ✏️
             </button>
-            <button class="btn-card-mini" onclick="handleDeleteFund('${fund.id}', '${escapeHtml(fund.fund_name)}')" title="删除" style="color: #f87171;">
+            <button class="btn-card-mini btn-card-delete" onclick="handleDeleteFund('${fund.id}', '${escapeHtml(fund.fund_name)}')" title="删除">
               🗑️
             </button>
           </div>
@@ -730,12 +730,41 @@ function handleFundSubmit(event) {
   }
 }
 
-function handleDeleteFund(fundId, fundName) {
-  if (confirm(`确定要移除“${fundName}”吗？`)) {
-    StorageManager.deleteFund(fundId);
-    showToast('已移除');
-    loadFunds();
+let confirmCallback = null;
+
+function showCustomConfirm({ title, message, icon = '🗑️', confirmText = '确认移除', onConfirm }) {
+  document.getElementById('confirmIcon').textContent = icon;
+  document.getElementById('confirmTitle').textContent = title || '确认操作';
+  document.getElementById('confirmMessage').textContent = message || '';
+  document.getElementById('btnConfirmOk').textContent = confirmText;
+
+  confirmCallback = onConfirm;
+  openModal('confirmModal');
+}
+
+function closeConfirmDialog(isConfirmed) {
+  closeModal('confirmModal');
+  if (isConfirmed && typeof confirmCallback === 'function') {
+    const cb = confirmCallback;
+    confirmCallback = null;
+    cb();
+  } else {
+    confirmCallback = null;
   }
+}
+
+function handleDeleteFund(fundId, fundName) {
+  showCustomConfirm({
+    title: '移除监控基金',
+    message: `确定要将“${fundName}”从监控目录中移除吗？`,
+    icon: '🗑️',
+    confirmText: '确认移除',
+    onConfirm: () => {
+      StorageManager.deleteFund(fundId);
+      showToast(`✅ 已移除“${fundName}”`);
+      loadFunds();
+    }
+  });
 }
 
 // 动态更新设置说明中的3倍/4倍/5倍金额预览
